@@ -1,0 +1,1715 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DALE Story — Episodio 1: El Lunes</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0b0c0d;--bg2:#131416;--bg3:#1a1c1f;--surface:#222428;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#ede9e3;--muted:#7a7875;--faint:#444240;
+  --accent:#6b9e5e;--accent2:#8cbf7d;
+  --gold:#c9a84c;--danger:#bf5858;--info:#5a8fc0;--warn:#c9844c;
+  --font-d:'Playfair Display',Georgia,serif;
+  --font-b:'DM Sans',system-ui,sans-serif;
+  --ease:cubic-bezier(0.4,0,0.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-b);font-size:16px;line-height:1.6;overflow:hidden}
+
+/* ── LOADING SCREEN ── */
+#screen-loading{
+  position:fixed;inset:0;z-index:8888;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;
+  transition:opacity 0.6s var(--ease);
+}
+#screen-loading.fade-out{opacity:0;pointer-events:none}
+.load-logo{font-family:var(--font-d);font-size:22px;font-weight:700;color:var(--accent);letter-spacing:0.35em}
+.load-logo sup{font-size:0.55em;color:var(--muted)}
+.load-bar-wrap{width:220px;height:2px;background:var(--surface);border-radius:1px;overflow:hidden}
+.load-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:1px;width:0%;transition:width 0.3s var(--ease)}
+.load-label{font-size:11px;color:var(--muted);letter-spacing:0.1em;height:16px}
+
+/* ── CREDITS SCREEN ── */
+#screen-credits{
+  position:fixed;inset:0;z-index:400;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.6s var(--ease);
+  text-align:center;padding:2rem;
+}
+#screen-credits.on{opacity:1;pointer-events:all}
+.credits-ep{font-size:11px;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;margin-bottom:1rem}
+.credits-title{font-family:var(--font-d);font-size:clamp(28px,6vw,48px);font-weight:900;color:var(--text);margin-bottom:0.5rem}
+.credits-sub{font-family:var(--font-d);font-size:16px;font-style:italic;color:var(--muted);margin-bottom:3rem}
+.credits-next{
+  background:var(--bg2);border:0.5px solid var(--border2);border-radius:3px;
+  padding:20px 28px;max-width:400px;margin:0 auto 2.5rem;
+}
+.credits-next-tag{font-size:9px;color:var(--gold);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:8px}
+.credits-next-title{font-family:var(--font-d);font-size:20px;color:var(--text);margin-bottom:4px}
+.credits-next-sub{font-size:12px;color:var(--muted)}
+.credits-made{font-size:11px;color:var(--muted);margin-bottom:0.3rem}
+.credits-brand{font-family:var(--font-d);font-size:15px;color:var(--accent);letter-spacing:0.12em}
+.credits-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:2rem}
+.btn-credits-rp{background:var(--accent);color:#fff;border:none;padding:12px 28px;border-radius:2px;font-family:var(--font-b);font-size:13px;font-weight:500;cursor:pointer;transition:background 0.2s}
+.btn-credits-rp:hover{background:var(--accent2)}
+.btn-credits-ti{background:transparent;color:var(--muted);border:0.5px solid var(--border2);padding:12px 28px;border-radius:2px;font-family:var(--font-b);font-size:13px;cursor:pointer;transition:all 0.2s}
+.btn-credits-ti:hover{color:var(--text)}
+
+/* MUSIC CONTROL */
+.music-btn{
+  position:fixed;bottom:20px;right:20px;z-index:500;
+  width:36px;height:36px;border-radius:50%;
+  background:var(--surface);border:0.5px solid var(--border2);
+  color:var(--muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;transition:all 0.2s;
+  opacity:0;pointer-events:none;
+}
+.music-btn.visible{opacity:1;pointer-events:all}
+.music-btn:hover{color:var(--text);border-color:var(--border2);background:var(--bg3)}
+.music-btn.playing .music-icon-off{display:none}
+.music-btn.playing .music-icon-on{display:flex}
+.music-btn:not(.playing) .music-icon-on{display:none}
+.music-btn:not(.playing) .music-icon-off{display:flex}
+.music-icon-on,.music-icon-off{align-items:center;justify-content:center;width:100%;height:100%}
+
+/* ── SCREENS ── */
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;overflow:hidden}
+.screen.active{opacity:1;pointer-events:all}
+
+/* ── CURTAIN ── */
+#curtain{position:fixed;inset:0;z-index:9999;background:#0b0c0d;transform:scaleY(0);transform-origin:top;pointer-events:none}
+#curtain.closing{animation:cClose 0.35s var(--ease) forwards}
+#curtain.opening{animation:cOpen 0.35s var(--ease) forwards}
+@keyframes cClose{to{transform:scaleY(1);transform-origin:top}}
+@keyframes cOpen{from{transform:scaleY(1);transform-origin:bottom}to{transform:scaleY(0);transform-origin:bottom}}
+
+/* ── TITLE ── */
+#screen-title{align-items:center;justify-content:center;background:var(--bg)}
+#title-canvas{position:absolute;inset:0}
+.title-content{position:relative;z-index:1;text-align:center;padding:2rem;max-width:580px;opacity:0;animation:riseIn 1.2s var(--ease) 0.3s forwards}
+@keyframes riseIn{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:translateY(0)}}
+.dale-logo{font-family:var(--font-d);font-size:clamp(13px,2.5vw,16px);letter-spacing:0.45em;color:var(--accent);text-transform:uppercase;margin-bottom:2.5rem}
+.dale-logo sup{font-size:0.6em;color:var(--muted);letter-spacing:0.1em}
+.ep-tag{font-size:11px;letter-spacing:0.22em;color:var(--muted);text-transform:uppercase;margin-bottom:0.6rem}
+.title-h{font-family:var(--font-d);font-size:clamp(52px,11vw,88px);font-weight:900;line-height:0.95;color:var(--text);margin-bottom:0.4rem}
+.title-h em{font-style:italic;color:var(--accent2)}
+.title-byline{font-size:13px;color:var(--muted);letter-spacing:0.06em;margin-bottom:3rem}
+.title-stats{display:flex;gap:2.5rem;justify-content:center;margin-bottom:3rem;flex-wrap:wrap}
+.stat-item{text-align:center}
+.stat-n{font-family:var(--font-d);font-size:26px;color:var(--gold);display:block}
+.stat-l{font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase}
+.btn-play{background:var(--accent);color:#fff;border:none;padding:15px 44px;font-family:var(--font-b);font-size:14px;font-weight:500;letter-spacing:0.06em;border-radius:2px;cursor:pointer;transition:background 0.2s,transform 0.15s,box-shadow 0.2s}
+.btn-play:hover{background:var(--accent2);transform:translateY(-2px);box-shadow:0 8px 32px rgba(107,158,94,0.25)}
+.title-footnote{font-size:11px;color:var(--muted);margin-top:1rem;letter-spacing:0.05em}
+
+/* ── GAME SCREEN ── */
+#screen-game{flex-direction:row}
+.hud{position:absolute;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;padding:14px 28px;gap:14px;background:linear-gradient(to bottom,rgba(11,12,13,0.96) 0%,transparent 100%)}
+.hud-logo{font-family:var(--font-d);font-size:12px;font-weight:700;color:var(--accent);letter-spacing:0.18em;flex-shrink:0}
+.hud-sep{width:1px;height:16px;background:var(--border2)}
+.hud-ep{font-size:11px;color:var(--muted);letter-spacing:0.07em}
+.hud-space{flex:1}
+.dec-dots{display:flex;gap:6px;align-items:center}
+.dd{width:8px;height:8px;border-radius:50%;background:var(--surface);border:1px solid var(--border2);transition:all 0.4s var(--ease)}
+.dd.done{background:var(--accent);border-color:var(--accent);box-shadow:0 0 6px rgba(107,158,94,0.4)}
+.dd.now{background:var(--gold);border-color:var(--gold);animation:ddPulse 1.8s ease infinite}
+@keyframes ddPulse{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0.4)}50%{box-shadow:0 0 0 4px rgba(201,168,76,0)}}
+.score-hud{display:flex;align-items:center;gap:8px}
+.score-lbl{font-size:9px;color:var(--muted);letter-spacing:0.14em;text-transform:uppercase}
+.score-bar{width:72px;height:3px;background:var(--surface);border-radius:2px;overflow:hidden}
+.score-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width 0.7s var(--ease);width:0%}
+.score-n{font-family:var(--font-d);font-size:16px;color:var(--gold);min-width:28px;text-align:right}
+
+/* ── STAGE ── */
+.stage{flex:1;position:relative;display:flex;align-items:flex-end;overflow:hidden}
+#scene-svg{position:absolute;inset:0;width:100%;height:100%}
+.scan{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.04) 4px);z-index:5}
+.particles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;animation:pfloat linear infinite;opacity:0}
+@keyframes pfloat{0%{transform:translateY(0) translateX(0);opacity:0}10%{opacity:var(--op)}90%{opacity:var(--op)}100%{transform:translateY(var(--dy)) translateX(var(--dx));opacity:0}}
+
+/* CUSTOM SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--surface);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--faint)}
+::-webkit-scrollbar-corner{background:var(--bg2)}
+*{scrollbar-width:thin;scrollbar-color:var(--surface) var(--bg2)}
+
+/* CHARACTER */
+.char-layer{
+  position:absolute;
+  left:20px;
+  top:60%;
+  transform:translateY(-50%);
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  height:auto;
+  pointer-events:none;
+  transition:opacity 0.5s var(--ease),transform 0.5s var(--ease);
+  z-index:8;
+}
+.char-layer.hidden{opacity:0;transform:translateY(-50%) translateY(16px)}
+.char-avatar{display:flex;flex-direction:column;align-items:center;gap:0;padding-bottom:0}
+.char-icon{width:clamp(80px,14vw,120px);height:clamp(80px,14vw,120px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:clamp(28px,5vw,42px);font-weight:700;border:2px solid;position:relative}
+.char-icon::after{content:'';position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);width:60%;height:2px;border-radius:1px}
+.char-name-tag{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;margin-top:8px;padding:3px 12px;border-radius:2px;border:0.5px solid}
+.char-role-tag{font-size:10px;color:var(--muted);margin-top:3px}
+.char-shadow{width:80px;height:8px;border-radius:50%;background:rgba(0,0,0,0.4);margin-top:4px}
+
+/* DIALOGUE */
+.dlg-area{position:relative;z-index:10;width:100%;padding:0 0 20px}
+.dlg-box{margin:0 20px;background:rgba(11,12,13,0.93);border:0.5px solid var(--border2);border-radius:3px;backdrop-filter:blur(16px);transition:opacity 0.25s,transform 0.25s;transform:translateY(0)}
+.dlg-box.out{opacity:0;transform:translateY(8px)}
+.dlg-spk{padding:10px 18px 6px;font-size:10px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:7px}
+.spk-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;transition:background 0.3s}
+.dlg-text{padding:14px 18px;font-size:15px;line-height:1.75;color:var(--text);min-height:52px}
+.dlg-sub{padding:0 18px 12px;font-size:13px;color:var(--muted);font-style:italic}
+.dlg-cont{padding:8px 18px 12px;display:flex;align-items:center;justify-content:flex-end;gap:5px;font-size:10px;color:var(--muted);letter-spacing:0.07em;cursor:pointer;user-select:none}
+.dlg-arrow{width:20px;height:20px;border-radius:50%;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:12px;animation:arrB 1.6s ease infinite}
+@keyframes arrB{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}
+
+/* DECISION */
+.dec-box{margin:0 20px;display:none}
+.dec-prompt{background:rgba(11,12,13,0.93);border:0.5px solid var(--border2);border-radius:3px 3px 0 0;padding:14px 18px;backdrop-filter:blur(16px)}
+.dec-tag{font-size:9px;color:var(--gold);letter-spacing:0.17em;text-transform:uppercase;margin-bottom:6px}
+.dec-q{font-family:var(--font-d);font-size:19px;line-height:1.25;color:var(--text)}
+.dec-opts{display:flex;flex-direction:column;gap:1px}
+.opt{background:rgba(17,18,20,0.96);border:0.5px solid var(--border);border-left:2px solid transparent;padding:13px 18px;text-align:left;cursor:pointer;transition:all 0.18s;backdrop-filter:blur(8px);display:flex;flex-direction:column;gap:2px;position:relative;overflow:hidden}
+.opt::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(107,158,94,0.08),transparent);opacity:0;transition:opacity 0.2s}
+.opt:last-child{border-radius:0 0 3px 3px}
+.opt:hover{border-left-color:var(--accent)}.opt:hover::before{opacity:1}.opt:hover .opt-lbl{color:var(--accent2)}
+.opt-key{font-size:9px;color:var(--muted);background:var(--surface);border-radius:2px;padding:1px 5px;align-self:flex-start;letter-spacing:0.06em;margin-bottom:1px}
+.opt-lbl{font-size:14px;font-weight:500;color:var(--text);transition:color 0.18s}
+.opt-sub{font-size:12px;color:var(--muted)}
+
+/* ════════════════════════════════════════
+   DATA ROOM — the heart of DALE
+════════════════════════════════════════ */
+#data-room{
+  position:fixed;inset:0;z-index:300;
+  background:var(--bg);
+  opacity:0;pointer-events:none;
+  transition:opacity 0.4s var(--ease);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+#data-room.on{opacity:1;pointer-events:all}
+
+/* DR Header */
+.dr-header{
+  display:flex;align-items:center;gap:16px;
+  padding:16px 28px 0;
+  flex-shrink:0;
+  border-bottom:0.5px solid var(--border);
+}
+.dr-eyebrow{font-size:9px;color:var(--gold);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:3px}
+.dr-title{font-family:var(--font-d);font-size:20px;color:var(--text)}
+.dr-title-area{flex:1}
+.dr-analysis-score{
+  display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;
+}
+.dr-as-label{font-size:9px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase}
+.dr-as-bar{width:80px;height:3px;background:var(--surface);border-radius:2px;overflow:hidden}
+.dr-as-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--accent2));border-radius:2px;width:0%;transition:width 0.6s var(--ease)}
+.dr-as-num{font-size:12px;color:var(--gold);font-weight:500}
+.dr-close-btn{
+  background:var(--surface);border:0.5px solid var(--border2);color:var(--muted);
+  padding:8px 16px;border-radius:2px;cursor:pointer;font-family:var(--font-b);font-size:12px;
+  transition:all 0.2s;flex-shrink:0;letter-spacing:0.04em;
+}
+.dr-close-btn:hover{color:var(--text);border-color:var(--border2)}
+.dr-close-btn.locked{opacity:0.4;cursor:not-allowed}
+
+/* DR Tabs */
+.dr-tabs{
+  display:flex;gap:0;padding:0 28px;
+  border-bottom:0.5px solid var(--border);
+  flex-shrink:0;overflow-x:auto;
+}
+.dr-tab{
+  padding:12px 20px;font-size:12px;letter-spacing:0.05em;
+  color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;
+  transition:all 0.2s;white-space:nowrap;display:flex;align-items:center;gap:6px;
+  position:relative;
+}
+.dr-tab:hover{color:var(--text)}
+.dr-tab.active{color:var(--accent2);border-bottom-color:var(--accent2)}
+.dr-tab.visited::after{content:'✓';font-size:9px;color:var(--accent);margin-left:2px}
+.dr-tab .tab-new{
+  width:6px;height:6px;border-radius:50%;background:var(--gold);
+  animation:ddPulse 2s ease infinite;flex-shrink:0;
+}
+.dr-tab.visited .tab-new{display:none}
+
+/* DR Body */
+.dr-body{
+  flex:1;display:flex;overflow:hidden;
+  padding:24px 28px;gap:20px;
+}
+.dr-main{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+.dr-sidebar{width:280px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex-shrink:0}
+
+/* Chart cards */
+.chart-card{
+  background:var(--bg2);border:0.5px solid var(--border);border-radius:3px;
+  padding:16px 18px;animation:slideUp 0.4s var(--ease) both;
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.cc-title{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:0.06em;margin-bottom:12px;text-transform:uppercase}
+.cc-subtitle{font-size:10px;color:var(--faint);margin-top:4px}
+.chart-wrap{position:relative}
+.chart-wrap canvas{display:block}
+
+/* KPI grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.kpi-card{
+  background:var(--bg2);border:0.5px solid var(--border);border-radius:3px;
+  padding:12px 14px;cursor:pointer;transition:border-color 0.2s;
+  animation:slideUp 0.4s var(--ease) both;
+}
+.kpi-card:hover{border-color:var(--border2)}
+.kpi-card.highlight{border-color:rgba(201,168,76,0.4);background:rgba(201,168,76,0.04)}
+.kpi-lbl{font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:0.04em}
+.kpi-val{font-family:var(--font-d);font-size:24px;font-weight:700;line-height:1}
+.kpi-delta{font-size:11px;margin-top:3px}
+.kpi-delta.neg{color:var(--danger)}.kpi-delta.pos{color:var(--accent2)}.kpi-delta.warn{color:var(--warn)}
+.kpi-spark{margin-top:8px;height:28px}
+
+/* INSIGHT PANEL (sidebar) */
+.insight-panel{
+  background:var(--bg2);border:0.5px solid var(--border);border-radius:3px;
+  padding:14px;display:flex;flex-direction:column;gap:10px;
+}
+.ip-title{font-size:10px;color:var(--gold);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:2px}
+.ip-item{
+  padding:10px 12px;border-radius:2px;border-left:2px solid var(--faint);
+  font-size:12px;color:var(--muted);line-height:1.55;
+  transition:all 0.3s;opacity:0.4;
+}
+.ip-item.revealed{opacity:1;border-left-color:var(--accent);color:var(--text);animation:insReveal 0.5s var(--ease) both}
+@keyframes insReveal{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+.ip-item strong{color:var(--accent2);font-weight:500}
+.ip-item.critical{border-left-color:var(--gold);background:rgba(201,168,76,0.05)}
+.ip-item.critical strong{color:var(--gold)}
+
+/* GUIDE PANEL */
+.guide-panel{
+  background:linear-gradient(135deg,rgba(107,158,94,0.06),rgba(107,158,94,0.02));
+  border:0.5px solid rgba(107,158,94,0.2);border-radius:3px;
+  padding:14px;
+}
+.guide-icon{font-size:18px;margin-bottom:6px}
+.guide-title{font-size:11px;color:var(--accent2);font-weight:500;margin-bottom:6px;letter-spacing:0.04em}
+.guide-text{font-size:12px;color:var(--muted);line-height:1.6}
+.guide-hint{
+  margin-top:10px;padding:8px 10px;
+  background:rgba(107,158,94,0.08);border-radius:2px;
+  font-size:11px;color:var(--accent);line-height:1.5;font-style:italic;
+}
+
+/* FILTER ROW */
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.filter-btn{
+  background:var(--surface);border:0.5px solid var(--border);color:var(--muted);
+  padding:5px 12px;border-radius:2px;font-family:var(--font-b);font-size:11px;
+  cursor:pointer;transition:all 0.18s;letter-spacing:0.03em;
+}
+.filter-btn.active{background:rgba(107,158,94,0.12);border-color:rgba(107,158,94,0.35);color:var(--accent2)}
+.filter-btn:hover:not(.active){border-color:var(--border2);color:var(--text)}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{padding:8px 12px;text-align:left;font-size:10px;font-weight:500;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;border-bottom:0.5px solid var(--border)}
+.data-table td{padding:9px 12px;border-bottom:0.5px solid rgba(255,255,255,0.03);color:var(--text)}
+.data-table tr:hover td{background:rgba(255,255,255,0.02)}
+.data-table .neg{color:var(--danger)}.data-table .pos{color:var(--accent2)}.data-table .warn{color:var(--warn)}
+.data-table .risk-high{color:var(--danger);font-weight:500}
+.data-table .risk-mid{color:var(--warn)}
+.data-table .risk-low{color:var(--accent2)}
+.bar-mini{display:inline-block;height:4px;border-radius:2px;vertical-align:middle;margin-left:6px}
+
+/* WATERFALL */
+.waterfall-wrap{overflow-x:auto}
+
+/* RADAR / SPECIAL */
+.chart-2col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:600px){.chart-2col{grid-template-columns:1fr}}
+
+/* PROGRESS TRACKER */
+.tab-progress{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 28px;background:rgba(11,12,13,0.6);
+  border-top:0.5px solid var(--border);flex-shrink:0;
+}
+.tp-label{font-size:10px;color:var(--muted);letter-spacing:0.08em}
+.tp-dots{display:flex;gap:4px;flex:1}
+.tp-dot{width:5px;height:5px;border-radius:50%;background:var(--surface);border:1px solid var(--border2);transition:all 0.3s}
+.tp-dot.v{background:var(--accent);border-color:var(--accent)}
+.dr-cta{
+  padding:16px 28px;border-top:0.5px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-shrink:0;
+}
+.dr-cta-note{font-size:12px;color:var(--muted)}
+.dr-cta-note strong{color:var(--text)}
+.btn-dr-cta{
+  background:var(--accent);color:#fff;border:none;padding:12px 32px;
+  border-radius:2px;font-family:var(--font-b);font-size:13px;font-weight:500;
+  cursor:pointer;transition:all 0.2s;letter-spacing:0.04em;white-space:nowrap;
+}
+.btn-dr-cta:hover{background:var(--accent2)}
+.btn-dr-cta:disabled{background:var(--surface);color:var(--muted);cursor:not-allowed}
+
+/* EMAIL */
+#ov-email{position:fixed;inset:0;z-index:200;background:rgba(11,12,13,0.97);display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity 0.4s}
+#ov-email.on{opacity:1;pointer-events:all}
+.email-card{background:var(--bg2);border:0.5px solid var(--border2);border-radius:3px;max-width:540px;width:100%;animation:slideUp 0.4s var(--ease) both}
+.email-topbar{background:var(--bg3);padding:14px 18px;border-bottom:0.5px solid var(--border)}
+.email-app{font-size:9px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px}
+.email-subj{font-family:var(--font-d);font-size:18px;color:var(--text);margin-bottom:8px}
+.email-meta{font-size:11px;color:var(--muted);margin-bottom:2px}
+.email-meta span{color:var(--text)}
+.email-body{padding:18px;font-size:14px;line-height:1.85;color:var(--text)}
+.email-alert{padding:10px 18px;background:rgba(201,168,76,0.07);border-top:0.5px solid rgba(201,168,76,0.18);font-size:12px;color:var(--gold);display:flex;gap:7px;line-height:1.5}
+.email-foot{padding:14px 18px;display:flex;justify-content:flex-end;border-top:0.5px solid var(--border)}
+.btn-email{background:var(--accent);color:#fff;border:none;padding:10px 22px;border-radius:2px;font-family:var(--font-b);font-size:12px;font-weight:500;cursor:pointer;transition:background 0.2s}
+.btn-email:hover{background:var(--accent2)}
+
+/* ENDING */
+#screen-ending{align-items:center;justify-content:center;background:var(--bg)}
+.end-bg{position:absolute;inset:0;pointer-events:none}
+.end-content{position:relative;z-index:1;max-width:540px;width:100%;padding:2rem;text-align:center;opacity:0;animation:riseIn 0.9s var(--ease) 0.2s forwards}
+.end-badge{display:inline-block;font-size:9px;letter-spacing:0.17em;text-transform:uppercase;padding:5px 14px;border-radius:2px;margin-bottom:1.5rem}
+.ba{background:rgba(107,158,94,0.12);color:var(--accent2);border:0.5px solid rgba(107,158,94,0.28)}
+.bb{background:rgba(201,168,76,0.1);color:var(--gold);border:0.5px solid rgba(201,168,76,0.22)}
+.bc{background:rgba(192,88,88,0.1);color:var(--danger);border:0.5px solid rgba(192,88,88,0.22)}
+.end-title{font-family:var(--font-d);font-size:clamp(26px,5.5vw,44px);font-weight:900;line-height:1.05;margin-bottom:0.4rem}
+.end-sub{font-family:var(--font-d);font-size:15px;font-style:italic;color:var(--muted);margin-bottom:1.5rem}
+.end-story{font-size:13px;line-height:1.85;color:var(--muted);margin-bottom:0.8rem}
+.end-res{font-size:14px;line-height:1.75;color:var(--text);margin-bottom:2rem}
+.lesson-box{background:var(--bg2);border:0.5px solid var(--border2);border-radius:3px;padding:14px 18px;margin-bottom:2rem;text-align:left}
+.lesson-tag{font-size:9px;color:var(--gold);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px}
+.lesson-q{font-family:var(--font-d);font-size:17px;font-style:italic;color:var(--text);line-height:1.5}
+.score-reveal{margin-bottom:2rem}
+.sr-lbl{font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px}
+.score-big{font-family:var(--font-d);font-size:60px;font-weight:900;line-height:1}
+.score-big .denom{font-size:22px;color:var(--muted)}
+.sbar-e{background:var(--surface);height:5px;border-radius:3px;overflow:hidden;margin-top:8px}
+.sbar-ef{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;width:0%;transition:width 1.6s var(--ease)}
+.recap{display:flex;gap:7px;justify-content:center;margin-bottom:2rem;flex-wrap:wrap}
+.rc{font-size:10px;padding:4px 10px;border-radius:2px;border:0.5px solid var(--border2);color:var(--muted)}
+.rc.g{border-color:rgba(107,158,94,0.38);color:var(--accent2);background:rgba(107,158,94,0.07)}
+.rc.b{border-color:rgba(192,88,88,0.38);color:var(--danger);background:rgba(192,88,88,0.07)}
+.rc.m{border-color:rgba(201,168,76,0.38);color:var(--gold);background:rgba(201,168,76,0.07)}
+.end-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn-rp{background:var(--accent);color:#fff;border:none;padding:12px 28px;border-radius:2px;font-family:var(--font-b);font-size:13px;font-weight:500;cursor:pointer;transition:background 0.2s}
+.btn-rp:hover{background:var(--accent2)}
+.btn-sec{background:transparent;color:var(--muted);border:0.5px solid var(--border2);padding:12px 28px;border-radius:2px;font-family:var(--font-b);font-size:13px;cursor:pointer;transition:all 0.2s}
+.btn-sec:hover{color:var(--text)}
+
+/* SCORE POP */
+@keyframes pop{0%{opacity:0;transform:translateY(0) scale(0.7)}25%{opacity:1;transform:translateY(-22px) scale(1.15)}70%{opacity:1;transform:translateY(-30px) scale(1)}100%{opacity:0;transform:translateY(-40px) scale(0.9)}}
+.spop{position:fixed;z-index:9998;font-family:var(--font-d);font-size:20px;font-weight:700;color:var(--gold);pointer-events:none;animation:pop 1.9s ease forwards;text-shadow:0 2px 8px rgba(0,0,0,0.8)}
+
+@media(max-width:700px){.dr-sidebar{display:none}.dr-body{padding:16px}.dr-tabs{padding:0 16px}.dr-header{padding:12px 16px 0}.dr-cta{padding:12px 16px}.tab-progress{padding:8px 16px}}
+</style>
+</head>
+<body>
+<div id="screen-loading">
+  <div class="load-logo">D·A·L·E <sup>Story</sup></div>
+  <div>
+    <div class="load-bar-wrap"><div class="load-bar" id="load-bar"></div></div>
+  </div>
+  <div class="load-label" id="load-label">Iniciando experiencia...</div>
+</div>
+<div id="curtain"></div>
+
+<!-- ══ TITLE ══ -->
+<div id="screen-title" class="screen active">
+  <canvas id="title-canvas"></canvas>
+  <div class="title-content">
+    <div class="dale-logo">D·A·L·E <sup>Story</sup></div>
+    <div class="ep-tag">Episodio 1</div>
+    <h1 class="title-h"><em>"El Lunes"</em></h1>
+    <p class="title-byline">Rendija S.A.S — Medellín, Colombia</p>
+    <div class="title-stats">
+      <div class="stat-item"><span class="stat-n">3</span><span class="stat-l">Decisiones</span></div>
+      <div class="stat-item"><span class="stat-n">5</span><span class="stat-l">Vistas de datos</span></div>
+      <div class="stat-item"><span class="stat-n">100</span><span class="stat-l">DataScore™</span></div>
+    </div>
+    <button class="btn-play" onclick="startGame()">Comenzar</button>
+    <p class="title-footnote">DALE Strategy · Para directivos y gerentes · v1.0 prototipo</p>
+  </div>
+</div>
+
+<!-- ══ GAME ══ -->
+<div id="screen-game" class="screen">
+  <div class="hud">
+    <div class="hud-logo">D·A·L·E</div>
+    <div class="hud-sep"></div>
+    <div class="hud-ep">Ep.1 — El Lunes</div>
+    <div class="hud-space"></div>
+    <div class="dec-dots"><div class="dd" id="dd1"></div><div class="dd" id="dd2"></div><div class="dd" id="dd3"></div></div>
+    <div class="hud-sep"></div>
+    <div class="score-hud">
+      <div class="score-lbl">DataScore™</div>
+      <div class="score-bar"><div class="score-fill" id="sfill"></div></div>
+      <div class="score-n" id="snum">0</div>
+    </div>
+  </div>
+  <div class="stage" id="stage">
+    <svg id="scene-svg" style="position:absolute;inset:0;width:100%;height:100%"></svg>
+    <div style="position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.04) 4px);z-index:5"></div>
+    <div class="particles" id="particles"></div>
+    <div class="char-layer hidden" id="char-layer">
+      <div class="char-avatar" id="char-avatar"></div>
+    </div>
+    <div class="dlg-area" id="dlg-area">
+      <div class="dlg-box" id="dlg-box">
+        <div class="dlg-spk" id="dlg-spk" style="display:none"><div class="spk-dot" id="spk-dot"></div><span id="spk-name"></span></div>
+        <div class="dlg-text" id="dlg-text"></div>
+        <div class="dlg-sub" id="dlg-sub" style="display:none"></div>
+        <div class="dlg-cont" id="dlg-cont" onclick="advance()">Continuar <div class="dlg-arrow">›</div></div>
+      </div>
+      <div class="dec-box" id="dec-box">
+        <div class="dec-prompt"><div class="dec-tag" id="dec-tag">Decisión</div><div class="dec-q" id="dec-q"></div></div>
+        <div class="dec-opts" id="dec-opts"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DATA ROOM ══ -->
+<div id="data-room">
+  <div class="dr-header">
+    <div class="dr-title-area">
+      <div class="dr-eyebrow" id="dr-eyebrow">Sala de Análisis</div>
+      <div class="dr-title" id="dr-title">Data Room — Rendija S.A.S</div>
+    </div>
+    <div class="dr-analysis-score">
+      <div class="dr-as-label">Análisis completado</div>
+      <div class="dr-as-bar"><div class="dr-as-fill" id="dr-as-fill"></div></div>
+      <div class="dr-as-num" id="dr-as-num">0 / 5 vistas</div>
+    </div>
+    <button class="btn dr-close-btn" id="dr-close-btn" onclick="closeDataRoom()">Tomar decisión →</button>
+  </div>
+  <div class="dr-tabs" id="dr-tabs"></div>
+  <div class="dr-body">
+    <div class="dr-main" id="dr-main"></div>
+    <div class="dr-sidebar" id="dr-sidebar"></div>
+  </div>
+  <div class="tab-progress">
+    <div class="tp-label">Vistas exploradas:</div>
+    <div class="tp-dots" id="tp-dots"></div>
+    <div style="font-size:10px;color:var(--muted)" id="tp-hint">Explora todas las vistas para maximizar tu DataScore™</div>
+  </div>
+  <div class="dr-cta">
+    <div class="dr-cta-note" id="dr-cta-note">Explora al menos <strong>3 vistas</strong> antes de decidir</div>
+    <button class="btn-dr-cta" id="dr-cta-btn" onclick="closeDataRoom()" disabled>Tomar decisión →</button>
+  </div>
+</div>
+
+<!-- ══ EMAIL ══ -->
+<div id="ov-email">
+  <div class="email-card">
+    <div class="email-topbar">
+      <div class="email-app">✉ Correo corporativo — Rendija S.A.S</div>
+      <div class="email-subj">Una pregunta</div>
+      <div class="email-meta">De: <span>hgomez@tendenciasOriente.com</span></div>
+      <div class="email-meta">Para: <span>sreyes@rendija.com.co</span></div>
+      <div class="email-meta">Fecha: <span>Lunes, 7:18 a.m.</span></div>
+    </div>
+    <div class="email-body">Sofía, buenos días. Quería preguntarle antes de tomar una decisión.<br><br>¿Ustedes piensan seguir distribuyendo la línea de lácteos <strong>Alpes del Sur</strong>? Tengo una propuesta de otro distribuidor y necesito saber si Rendija sigue siendo mi opción.<br><br>Un saludo,<br>Héctor Gómez</div>
+    <div class="email-alert"><span>⚠</span><span>Don Héctor representa el <strong>23%</strong> de las ventas de lácteos de Rendija. Lleva 9 años como cliente ancla.</span></div>
+    <div class="email-foot"><button class="btn-email" onclick="closeEmail()">Entendido — Continuar</button></div>
+  </div>
+</div>
+
+<!-- ══ CREDITS ══ -->
+<div id="screen-credits">
+  <div class="credits-ep">Episodio 1 — Completado</div>
+  <div class="credits-title">"El Lunes"</div>
+  <div class="credits-sub">Rendija S.A.S — Medellín, Colombia</div>
+  <div class="credits-next">
+    <div class="credits-next-tag">Próximamente — Episodio 2</div>
+    <div class="credits-next-title">"El Martes"</div>
+    <div class="credits-next-sub">La junta tomó una decisión. Ahora hay que ejecutarla.<br>¿Tienes lo que se necesita para liderar el cambio?</div>
+  </div>
+  <div class="credits-made">Una experiencia creada por</div>
+  <div class="credits-brand">D·A·L·E by Symbiotic</div>
+  <div class="credits-btns">
+    <button class="btn-credits-rp" onclick="replayGame()">Volver a jugar</button>
+    <button class="btn-credits-ti" onclick="goTitle()">Inicio</button>
+  </div>
+</div>
+
+<!-- MUSIC BUTTON -->
+<button class="music-btn" id="music-btn" onclick="toggleMusic()" title="Música">
+  <span class="music-icon-on">♪</span>
+  <span class="music-icon-off">♩</span>
+</button>
+
+<!-- ══ ENDING ══ -->
+<div id="screen-ending" class="screen">
+  <div class="end-bg" id="end-bg"></div>
+  <div class="end-content">
+    <div class="end-badge" id="end-badge"></div>
+    <div class="end-title" id="end-title"></div>
+    <div class="end-sub" id="end-sub"></div>
+    <div class="end-story" id="end-story"></div>
+    <div class="end-res" id="end-res"></div>
+    <div class="lesson-box"><div class="lesson-tag">Lección DALE</div><div class="lesson-q" id="lesson-q"></div></div>
+    <div class="score-reveal">
+      <div class="sr-lbl">Tu DataScore™ Final</div>
+      <div class="score-big" id="sbig">0<span class="denom"> /100</span></div>
+      <div class="sbar-e"><div class="sbar-ef" id="sfill-e"></div></div>
+    </div>
+    <div class="recap" id="recap"></div>
+    <div class="end-btns">
+      <button class="btn-rp" onclick="replayGame()">Volver a jugar</button>
+      <button class="btn-sec" onclick="goTitle()">Inicio</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+// LOADING SCREEN
+// ════════════════════════════════════════════
+const LOAD_STEPS=[
+  {pct:15,label:'Cargando narrativa...'},
+  {pct:35,label:'Preparando datos...'},
+  {pct:55,label:'Construyendo escenarios...'},
+  {pct:75,label:'Inicializando DataScore™...'},
+  {pct:95,label:'¡Listo para comenzar!'},
+];
+(function(){
+  const bar=document.getElementById('load-bar');
+  const lbl=document.getElementById('load-label');
+  const scr=document.getElementById('screen-loading');
+  let i=0;
+  function step(){
+    if(i>=LOAD_STEPS.length){
+      scr.classList.add('fade-out');
+      setTimeout(()=>{scr.style.display='none'},700);
+      return;
+    }
+    const s=LOAD_STEPS[i++];
+    bar.style.width=s.pct+'%';lbl.textContent=s.label;
+    setTimeout(step,i===LOAD_STEPS.length?600:Math.random()*300+200);
+  }
+  setTimeout(step,400);
+})();
+
+// ════════════════════════════════════════════
+// AUDIO ENGINE (Web Audio API — no assets needed)
+// ════════════════════════════════════════════
+const AUDIO={
+  ctx:null,
+  masterGain:null,
+  musicNodes:[],
+  musicPlaying:false,
+  musicEnabled:true,
+
+  init(){
+    if(this.ctx) return;
+    this.ctx=new(window.AudioContext||window.webkitAudioContext)();
+    this.masterGain=this.ctx.createGain();
+    this.masterGain.gain.value=0.18;
+    this.masterGain.connect(this.ctx.destination);
+  },
+
+  // Ambient generative music — layered sine drones + slow arpeggios
+  startMusic(){
+    if(!this.musicEnabled||this.musicPlaying) return;
+    this.init();
+    if(this.ctx.state==='suspended') this.ctx.resume();
+    this.musicPlaying=true;
+    document.getElementById('music-btn').classList.add('playing','visible');
+
+    const t=this.ctx.currentTime;
+    // Root drone — Dm feel (D2 = 73.4Hz)
+    const drones=[73.4,110.0,146.8,220.0];
+    drones.forEach((freq,i)=>{
+      const osc=this.ctx.createOscillator();
+      const g=this.ctx.createGain();
+      const lfo=this.ctx.createOscillator();
+      const lfoG=this.ctx.createGain();
+      lfo.frequency.value=0.08+i*0.03;
+      lfoG.gain.value=1.5;
+      lfo.connect(lfoG);lfoG.connect(osc.frequency);
+      osc.type=i%2===0?'sine':'triangle';
+      osc.frequency.value=freq;
+      g.gain.value=0;
+      osc.connect(g);g.connect(this.masterGain);
+      lfo.start(t);osc.start(t);
+      g.gain.linearRampToValueAtTime(0.12-i*0.02,t+4);
+      this.musicNodes.push(osc,g,lfo,lfoG);
+    });
+
+    // Slow arpeggiated melody (pentatonic minor)
+    const melody=[220,261.6,293.7,349.2,392,440,523.2];
+    let mIdx=0;
+    const playNote=()=>{
+      if(!this.musicPlaying) return;
+      const osc=this.ctx.createOscillator();
+      const env=this.ctx.createGain();
+      const now=this.ctx.currentTime;
+      osc.type='sine';
+      osc.frequency.value=melody[mIdx%melody.length];
+      env.gain.setValueAtTime(0,now);
+      env.gain.linearRampToValueAtTime(0.06,now+0.3);
+      env.gain.exponentialRampToValueAtTime(0.001,now+3.5);
+      osc.connect(env);env.connect(this.masterGain);
+      osc.start(now);osc.stop(now+3.8);
+      mIdx++;
+      // Irregular intervals for organic feel
+      const interval=2200+Math.random()*3000;
+      if(this.musicPlaying) setTimeout(playNote,interval);
+    };
+    setTimeout(playNote,2000);
+
+    // Subtle reverb pad (filtered noise)
+    const buf=this.ctx.createBuffer(1,this.ctx.sampleRate*2,this.ctx.sampleRate);
+    const data=buf.getChannelData(0);
+    for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*0.4;
+    const src=this.ctx.createBufferSource();
+    src.buffer=buf;src.loop=true;
+    const filter=this.ctx.createBiquadFilter();
+    filter.type='lowpass';filter.frequency.value=280;filter.Q.value=0.5;
+    const padGain=this.ctx.createGain();padGain.gain.value=0.04;
+    src.connect(filter);filter.connect(padGain);padGain.connect(this.masterGain);
+    src.start(t);
+    this.musicNodes.push(src,filter,padGain);
+  },
+
+  stopMusic(){
+    this.musicPlaying=false;
+    document.getElementById('music-btn').classList.remove('playing');
+    this.musicNodes.forEach(n=>{try{n.stop&&n.stop();n.disconnect&&n.disconnect()}catch(e){}});
+    this.musicNodes=[];
+  },
+
+  toggle(){
+    this.musicEnabled=!this.musicEnabled;
+    if(this.musicEnabled) this.startMusic();
+    else this.stopMusic();
+  },
+
+  // UI sounds
+  playClick(){
+    this.init();
+    const o=this.ctx.createOscillator();
+    const g=this.ctx.createGain();
+    const t=this.ctx.currentTime;
+    o.frequency.value=800;o.type='sine';
+    g.gain.setValueAtTime(0.06,t);
+    g.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+    o.connect(g);g.connect(this.masterGain);
+    o.start(t);o.stop(t+0.15);
+  },
+
+  playDecision(){
+    this.init();
+    const t=this.ctx.currentTime;
+    [440,554,659].forEach((f,i)=>{
+      const o=this.ctx.createOscillator();
+      const g=this.ctx.createGain();
+      o.frequency.value=f;o.type='sine';
+      const st=t+i*0.08;
+      g.gain.setValueAtTime(0,st);
+      g.gain.linearRampToValueAtTime(0.07,st+0.05);
+      g.gain.exponentialRampToValueAtTime(0.001,st+0.4);
+      o.connect(g);g.connect(this.masterGain);
+      o.start(st);o.stop(st+0.45);
+    });
+  },
+
+  playInsight(){
+    this.init();
+    const t=this.ctx.currentTime;
+    const o=this.ctx.createOscillator();
+    const g=this.ctx.createGain();
+    o.frequency.setValueAtTime(660,t);
+    o.frequency.linearRampToValueAtTime(880,t+0.15);
+    o.type='sine';
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.05,t+0.06);
+    g.gain.exponentialRampToValueAtTime(0.001,t+0.5);
+    o.connect(g);g.connect(this.masterGain);
+    o.start(t);o.stop(t+0.55);
+  },
+
+  playScore(){
+    this.init();
+    const t=this.ctx.currentTime;
+    [523,659,784,1047].forEach((f,i)=>{
+      const o=this.ctx.createOscillator();
+      const g=this.ctx.createGain();
+      o.frequency.value=f;o.type='sine';
+      const st=t+i*0.06;
+      g.gain.setValueAtTime(0,st);
+      g.gain.linearRampToValueAtTime(0.05,st+0.04);
+      g.gain.exponentialRampToValueAtTime(0.001,st+0.35);
+      o.connect(g);g.connect(this.masterGain);
+      o.start(st);o.stop(st+0.4);
+    });
+  },
+
+  playEndingGood(){
+    this.init();
+    const t=this.ctx.currentTime;
+    [262,330,392,523,659].forEach((f,i)=>{
+      const o=this.ctx.createOscillator();
+      const g=this.ctx.createGain();
+      o.frequency.value=f;o.type='sine';
+      const st=t+i*0.1;
+      g.gain.setValueAtTime(0,st);
+      g.gain.linearRampToValueAtTime(0.08,st+0.08);
+      g.gain.exponentialRampToValueAtTime(0.001,st+1.2);
+      o.connect(g);g.connect(this.masterGain);
+      o.start(st);o.stop(st+1.5);
+    });
+  },
+
+  playEndingBad(){
+    this.init();
+    const t=this.ctx.currentTime;
+    [262,247,233,220].forEach((f,i)=>{
+      const o=this.ctx.createOscillator();
+      const g=this.ctx.createGain();
+      o.frequency.value=f;o.type='sine';
+      const st=t+i*0.14;
+      g.gain.setValueAtTime(0,st);
+      g.gain.linearRampToValueAtTime(0.07,st+0.1);
+      g.gain.exponentialRampToValueAtTime(0.001,st+1.0);
+      o.connect(g);g.connect(this.masterGain);
+      o.start(st);o.stop(st+1.2);
+    });
+  },
+};
+
+function toggleMusic(){AUDIO.toggle()}
+// ════════════════════════════════════════════
+(function(){
+  const cv=document.getElementById('title-canvas');
+  const ctx=cv.getContext('2d');
+  let W,H,pts=[];
+  function resize(){
+    W=cv.width=cv.offsetWidth;H=cv.height=cv.offsetHeight;
+    pts=Array.from({length:55},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*0.25,vy:(Math.random()-0.5)*0.25,r:Math.random()*1.4+0.4,a:Math.random()*0.2+0.04}));
+  }
+  window.addEventListener('resize',resize);resize();
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(p=>{p.x=(p.x+p.vx+W)%W;p.y=(p.y+p.vy+H)%H;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(107,158,94,${p.a})`;ctx.fill()});
+    for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+      const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<90){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle=`rgba(107,158,94,${0.05*(1-d/90)})`;ctx.lineWidth=0.5;ctx.stroke()}
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ════════════════════════════════════════════
+// SCENE BACKGROUNDS
+// ════════════════════════════════════════════
+const SCENES={
+  office:(w,h)=>`<defs><radialGradient id="sg1" cx="30%" cy="0%" r="70%"><stop offset="0%" stop-color="#1a2e1a" stop-opacity="0.9"/><stop offset="100%" stop-color="#0b0c0d"/></radialGradient></defs><rect width="${w}" height="${h}" fill="url(#sg1)"/><rect x="${w*.05}" y="${h*.08}" width="${w*.28}" height="${h*.55}" rx="3" fill="none" stroke="rgba(107,158,94,0.12)" stroke-width="1"/><rect x="${w*.07}" y="${h*.1}" width="${w*.24}" height="${h*.51}" rx="2" fill="rgba(107,158,94,0.04)"/>${Array.from({length:14},(_,i)=>`<line x1="${w*.07}" y1="${h*(.1+i*.037)}" x2="${w*.31}" y2="${h*(.1+i*.037)}" stroke="rgba(107,158,94,0.07)" stroke-width="0.5"/>`).join('')}<line x1="${w*.07}" y1="${h*.1}" x2="${w*.6}" y2="${h*.7}" stroke="rgba(107,158,94,0.035)" stroke-width="35"/><rect x="0" y="${h*.78}" width="${w}" height="${h*.22}" fill="rgba(0,0,0,0.5)"/><rect x="${w*.55}" y="${h*.55}" width="${w*.22}" height="${h*.18}" rx="2" fill="rgba(90,143,192,0.07)" stroke="rgba(90,143,192,0.14)" stroke-width="0.5"/>`,
+  desk:(w,h)=>`<defs><radialGradient id="sg2" cx="50%" cy="80%" r="60%"><stop offset="0%" stop-color="#1a1410" stop-opacity="0.9"/><stop offset="100%" stop-color="#0b0c0d"/></radialGradient></defs><rect width="${w}" height="${h}" fill="url(#sg2)"/><circle cx="${w*.75}" cy="${h*.35}" r="${w*.12}" fill="rgba(201,168,76,0.05)"/><circle cx="${w*.75}" cy="${h*.35}" r="${w*.05}" fill="rgba(201,168,76,0.09)"/><line x1="${w*.75}" y1="${h*.47}" x2="${w*.72}" y2="${h*.7}" stroke="rgba(201,168,76,0.28)" stroke-width="1.5"/><rect x="${w*.12}" y="${h*.6}" width="${w*.38}" height="${h*.26}" rx="2" fill="rgba(30,28,24,0.9)"/><rect x="${w*.14}" y="${h*.62}" width="${w*.34}" height="${h*.22}" rx="1" fill="rgba(90,143,192,0.06)" stroke="rgba(90,143,192,0.11)" stroke-width="0.5"/>`,
+  hallway:(w,h)=>`<defs><radialGradient id="sg3" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#141420" stop-opacity="0.9"/><stop offset="100%" stop-color="#0b0c0d"/></radialGradient></defs><rect width="${w}" height="${h}" fill="url(#sg3)"/><polygon points="${w*.35},${h*.2} ${w*.65},${h*.2} ${w*.95},${h*.9} ${w*.05},${h*.9}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>${Array.from({length:4},(_,i)=>`<ellipse cx="${w*.5}" cy="${h*(.15+i*.15)}" rx="${w*(.08-i*.015)}" ry="${h*.01}" fill="rgba(201,168,76,${.11-i*.022})"/>`).join('')}`,
+  board:(w,h)=>`<defs><radialGradient id="sg4" cx="50%" cy="30%" r="70%"><stop offset="0%" stop-color="#0e1a0e" stop-opacity="0.8"/><stop offset="100%" stop-color="#0b0c0d"/></radialGradient></defs><rect width="${w}" height="${h}" fill="url(#sg4)"/><ellipse cx="${w*.5}" cy="${h*.75}" rx="${w*.42}" ry="${h*.12}" fill="rgba(25,30,20,0.9)" stroke="rgba(107,158,94,0.1)" stroke-width="0.5"/>${Array.from({length:3},(_,i)=>`<ellipse cx="${w*(.25+i*.25)}" cy="${h*.66}" rx="${w*.04}" ry="${h*.04}" fill="rgba(20,25,20,0.8)" stroke="rgba(107,158,94,0.08)" stroke-width="0.5"/>`).join('')}<rect x="${w*.15}" y="${h*.1}" width="${w*.7}" height="${h*.35}" rx="2" fill="rgba(20,28,20,0.7)" stroke="rgba(107,158,94,0.12)" stroke-width="0.5"/><polygon points="${w*.5},0 ${w*.18},${h*.13} ${w*.82},${h*.13}" fill="rgba(107,158,94,0.02)"/>`
+};
+
+// ════════════════════════════════════════════
+// CHARACTER AVATARS (editorial style)
+// ════════════════════════════════════════════
+const CHARS={
+  sofia:{name:'Sofía Reyes',role:'Gerente General',init:'SR',color:'#6b9e5e',bg:'rgba(107,158,94,0.12)'},
+  andres:{name:'Andrés Mora',role:'Dir. Comercial',init:'AM',color:'#c09a5a',bg:'rgba(192,154,90,0.12)'},
+  valeria:{name:'Valeria Ospina',role:'Analista de Datos',init:'VO',color:'#7ab0c0',bg:'rgba(122,176,192,0.12)'},
+  hector:{name:'Don Héctor',role:'Cliente Ancla',init:'HG',color:'#c07a7a',bg:'rgba(192,122,122,0.12)'},
+  narrator:{name:'',role:'',init:'',color:'#7a7875',bg:'transparent'},
+};
+function renderChar(id){
+  const c=CHARS[id];if(!c||id==='narrator') return '';
+  return `<div class="char-icon" style="background:${c.bg};border-color:${c.color};color:${c.color};width:clamp(72px,12vw,108px);height:clamp(72px,12vw,108px);font-size:clamp(24px,4.5vw,38px)">${c.init}<div style="position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);width:50%;height:2px;background:${c.color};border-radius:1px;opacity:0.6"></div></div><div class="char-name-tag" style="color:${c.color};border-color:${c.color}40">${c.name}</div><div class="char-role-tag">${c.role}</div><div class="char-shadow"></div>`;
+}
+
+// ════════════════════════════════════════════
+// PARTICLES
+// ════════════════════════════════════════════
+function spawnParticles(scene){
+  const c=document.getElementById('particles');c.innerHTML='';
+  const n=scene==='board'?8:10;
+  for(let i=0;i<n;i++){
+    const p=document.createElement('div');p.className='particle';
+    const op=scene==='board'?0.12:0.07;
+    p.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${Math.random()*2+0.5}px;height:${Math.random()*2+0.5}px;background:rgba(107,158,94,0.5);animation-duration:${Math.random()*12+8}s;animation-delay:${-Math.random()*12}s;--dy:${-(Math.random()*40+15)}vh;--dx:${(Math.random()*16-8)}vw;--op:${op}`;
+    c.appendChild(p);
+  }
+}
+
+// ════════════════════════════════════════════
+// GAME DATA
+// ════════════════════════════════════════════
+const STORY=[
+  {id:'i0',type:'scene',scene:'office',char:null,text:'Medellín. Lunes, 7:42 a.m.',sub:null},
+  {id:'i1',type:'scene',scene:'office',char:'narrator',text:'El tráfico en la Avenida El Poblado ya está atascado. Llegas a la oficina con el café en una mano y el celular en la otra.',sub:'Tres notificaciones de Andrés. Un correo de la junta. Y uno extraño de Don Héctor.'},
+  {id:'i2',type:'scene',scene:'desk',char:'narrator',text:'Esta semana tienes que darle respuesta a una pregunta que llevas tres meses evitando.',sub:'¿Por qué cayeron las ventas 18%... y qué vas a hacer al respecto?'},
+  {id:'i3',type:'scene',scene:'desk',char:'narrator',text:'Los datos están ahí. El problema es que no todos te dicen lo mismo.',sub:null},
+  {id:'s1',type:'scene',scene:'office',char:'narrator',text:'Andrés entra sin tocar la puerta. Trae una tableta con gráficos.',sub:null},
+  {id:'s2',type:'dialogue',scene:'office',char:'andres',text:'Sofía, tengo los datos del trimestre. El mercado está difícil — todos en el sector estamos igual. No es solo nosotros.',sub:null},
+  {id:'s3',type:'dialogue',scene:'office',char:'sofia',text:'¿Tienes los números comparativos con la competencia?',sub:null},
+  {id:'s4',type:'dialogue',scene:'office',char:'andres',text:'No exactamente, pero se siente. Los clientes están apretados. Es un tema macroeconómico.',sub:null},
+  {id:'s5',type:'scene',scene:'office',char:'narrator',text:'Valeria aparece en la puerta. Duda antes de entrar.',sub:null},
+  {id:'s6',type:'dialogue',scene:'office',char:'valeria',text:'Perdón que interrumpa. Sofía, ¿tienes un minuto para ver algo antes de la reunión?',sub:null},
+  {id:'s7',type:'dialogue',scene:'office',char:'andres',text:'Valeria, estamos en medio de algo.',sub:null},
+  {id:'s8',type:'dialogue',scene:'office',char:'sofia',text:'No, está bien. ¿Qué tienes, Valeria?',sub:null},
+  {id:'s9',type:'dialogue',scene:'office',char:'valeria',text:'Es el dashboard de ventas por categoría. Hay algo raro que quiero que veas. No digo que sea la respuesta, pero...',sub:null},
+  {id:'dr1',type:'dataroom',scene:'office',roomId:'room1'},
+  {id:'d1',type:'decision',decNum:1,question:'Tienes dos lecturas posibles de los datos. ¿Cuál investigas primero?',
+   options:[
+     {id:'d1_volume',label:'El volumen cayó — ese es el problema',sub:'Las ventas bajaron 18%. Hay que reactivar.',score:15,next:null},
+     {id:'d1_margin',label:'El margen no cambió — algo más profundo pasa',sub:'Si vendemos menos pero no perdemos margen, ¿qué dejamos de vender?',score:30,next:null}
+   ]},
+  {id:'d1a_sc',type:'scene',scene:'office',char:'narrator',branch:'d1a',text:'Decides enfocarte en la caída de ventas. Andrés se siente validado.',sub:'Comparte más datos — pero selectivos. No explica por qué los lácteos específicamente.'},
+  {id:'d1b_sc',type:'dialogue',scene:'office',char:'sofia',branch:'d1b',text:'Valeria, esto no cuadra. Si cayeron las ventas pero el margen está igual, ¿qué estamos vendiendo menos que antes vendíamos más?',sub:null},
+  {id:'d1b2',type:'dialogue',scene:'office',char:'valeria',branch:'d1b',text:'Exacto. Eso es lo que quería mostrarte. Mira los lácteos — ahí está la respuesta, o parte de ella.',sub:null},
+  {id:'em1',type:'scene',scene:'desk',char:'narrator',text:'Sofía revisa el correo mientras Valeria prepara el análisis.',sub:'Ahí está el mensaje de Don Héctor Gómez — 9 años como cliente, 14 tiendas en el Oriente antioqueño.'},
+  {id:'em2',type:'email'},
+  {id:'d2',type:'decision',decNum:2,question:'Tienes 40 minutos antes de la junta. ¿Qué hilo jalas primero?',
+   options:[
+     {id:'d2_andres',label:'Hablar con Andrés sobre la competencia',sub:'Él tiene contexto comercial del mercado.',score:15,next:null},
+     {id:'d2_valeria',label:'Profundizar con Valeria en los datos',sub:'Algo en los números todavía no está explicado.',score:35,next:null},
+     {id:'d2_hector',label:'Responder el correo de Don Héctor',sub:'Su señal puede ser la clave del misterio.',score:20,next:null}
+   ]},
+  {id:'d2a',type:'dialogue',scene:'office',char:'andres',branch:'d2a',text:'El mercado está apretado, Sofía. La competencia también sufre. No es solo Rendija.',sub:'Sin datos duros. Solo percepciones.'},
+  {id:'d2a2',type:'scene',scene:'office',char:'narrator',branch:'d2a',text:'Andrés no puede explicar la caída específica en lácteos.',sub:'Llegarás a la junta sin evidencia concreta.'},
+  {id:'d2b',type:'dialogue',scene:'office',char:'valeria',branch:'d2b',text:'Mira esta línea de tiempo. La caída en lácteos coincide exactamente con el momento en que subimos el precio de distribución un 7%, hace cuatro meses.',sub:null},
+  {id:'dr2',type:'dataroom',scene:'office',roomId:'room2',branch:'d2b'},
+  {id:'d2b2',type:'dialogue',scene:'office',char:'valeria',branch:'d2b',text:'No es el mercado, Sofía. Es nuestro precio. Los clientes están migrando a otro distribuidor que no subió tarifas.',sub:null},
+  {id:'d2c',type:'dialogue',scene:'desk',char:'hector',branch:'d2c',text:'Sofía, gracias por llamar. Sí, tengo propuesta de Distribuidora Andes. Me ofrecen un 6% menos en lácteos. Necesito respuesta antes del jueves.',sub:null},
+  {id:'d2c2',type:'scene',scene:'desk',char:'narrator',branch:'d2c',text:'Tienes el dato más concreto de todos: un cliente real con una oferta real.',sub:'Pero llegas a la junta sabiendo el síntoma — sin análisis de causa raíz.'},
+  {id:'hw',type:'dialogue',scene:'hallway',char:'sofia',text:'Okay. Tengo los números. Tengo una teoría. Lo que no sé es cuánto de esto estoy lista para defender.',sub:'Son las 9:55 a.m. La reunión es en cinco minutos.'},
+  {id:'bo',type:'scene',scene:'board',char:'narrator',text:'Carlos Restrepo (fundador, conservador). Marcela Vásquez (financiera). Julián Rendón (tech).',sub:'Cada uno va a escuchar la misma presentación de forma diferente.'},
+  {id:'d3',type:'decision',decNum:3,question:'Entras a la sala. Los tres te miran. ¿Con qué abres?',
+   options:[
+     {id:'d3_cut',label:'Propones recortar costos operativos',sub:'El problema es eficiencia. Reducir gastos para recuperar márgenes.',score:5,next:'ending_resolver'},
+     {id:'d3_pivot',label:'Propones pivotar el portafolio',sub:'Bajar precio en lácteos, crecer en aseo. Basado en el análisis de mezcla.',score:20,next:'ending_resolver'},
+     {id:'d3_time',label:'Pides dos semanas más para investigar',sub:'Presentar lo que sabes y lo que no. Diagnóstico antes de solución.',score:10,next:'ending_resolver'}
+   ]},
+];
+
+// ════════════════════════════════════════════
+// DATA ROOM DEFINITIONS
+// ════════════════════════════════════════════
+const DATA_ROOMS={
+  room1:{
+    title:'Análisis del Trimestre — Q4',
+    eyebrow:'Data Room 1 · Antes de la Decisión 1',
+    tabs:[
+      {id:'overview',label:'Visión General',icon:'◈'},
+      {id:'cats',label:'Categorías',icon:'▦'},
+      {id:'margins',label:'Márgenes',icon:'◎'},
+      {id:'clients',label:'Clientes',icon:'◉'},
+      {id:'bench',label:'Benchmark',icon:'◇'},
+    ],
+    insights:{
+      overview:[
+        {text:'Las ventas brutas cayeron <strong>−18%</strong> en Q4, pero el EBITDA solo bajó <strong>−3%</strong>. Algo en la mezcla cambió.',revealed:false,critical:false},
+        {text:'El capital de trabajo empeoró: los días de inventario subieron de 18 a 26 días. Hay producto acumulado.',revealed:false,critical:false},
+      ],
+      cats:[
+        {text:'<strong>Lácteos concentra el 94% de la caída</strong> en ventas brutas. Snacks y aseo son ruido estadístico.',revealed:false,critical:true},
+        {text:'Aseo creció +12% en volumen pero con margen negativo. No es la solución — es un problema diferente.',revealed:false,critical:false},
+      ],
+      margins:[
+        {text:'El margen bruto de lácteos subió de <strong>22% → 28%</strong> por unidad, pero el volumen colapsó. Menos unidades, más caras.',revealed:false,critical:true},
+        {text:'El margen de aseo bajó de 18% → 14%. Crecemos en volumen pero perdemos rentabilidad. Patrón opuesto al de lácteos.',revealed:false,critical:false},
+      ],
+      clients:[
+        {text:'<strong>Don Héctor (23% de lácteos)</strong> lleva 3 meses sin aumentar pedidos. Señal de alerta temprana ignorada.',revealed:false,critical:true},
+        {text:'Los 5 clientes top de lácteos representan el 61% del volumen. Alta concentración = alto riesgo si uno se va.',revealed:false,critical:false},
+      ],
+      bench:[
+        {text:'El sector distribución creció <strong>+2.1%</strong> en Q4. Rendija cayó −18%. No es un problema de mercado.',revealed:false,critical:true},
+        {text:'Distribuidora Andes (principal competidor en lácteos) no subió precios en Q4. Tienen 7% de ventaja en ese segmento.',revealed:false,critical:false},
+      ],
+    },
+    guide:{
+      overview:'Los KPIs de resumen te dan el mapa. Antes de profundizar, responde: ¿dónde está el problema — en ingresos, márgenes, o ambos?',
+      cats:'Cuando el total cae pero el margen no, busca la categoría que concentra la caída. No todas las líneas se comportan igual.',
+      margins:'El margen por unidad sube cuando el precio sube. Pero si el volumen cae más rápido, el efecto total es negativo. ¿Cuál es el caso aquí?',
+      clients:'Un análisis de concentración de clientes revela el riesgo real. ¿Cuántos clientes representan el 80% del problema?',
+      bench:'Comparar contra el sector es la prueba de fuego. Si el mercado creció y tú caíste, el problema es interno.',
+    }
+  },
+  room2:{
+    title:'Diagnóstico de Causa Raíz — Lácteos',
+    eyebrow:'Data Room 2 · Antes de la Decisión 2',
+    tabs:[
+      {id:'timeline',label:'Línea de Tiempo',icon:'◈'},
+      {id:'price',label:'Elasticidad Precio',icon:'▦'},
+      {id:'comp',label:'Competencia',icon:'◎'},
+      {id:'segments',label:'Segmentos',icon:'◉'},
+      {id:'forecast',label:'Proyección',icon:'◇'},
+    ],
+    insights:{
+      timeline:[
+        {text:'La correlación precio→volumen es <strong>R²=0.94</strong>. Prácticamente perfecta. No es coincidencia — es causalidad.',revealed:false,critical:true},
+        {text:'El efecto tardó 30 días en manifestarse. Los clientes exploraron alternativas antes de migrar definitivamente.',revealed:false,critical:false},
+      ],
+      price:[
+        {text:'La elasticidad precio de los lácteos es <strong>−3.2</strong>. Por cada 1% de aumento en precio, el volumen cae 3.2%. El mercado es altamente sensible.',revealed:false,critical:true},
+        {text:'La categoría aseo tiene elasticidad −0.8. Mucho menos sensible. Aquí sí hay margen para ajustar precios sin perder volumen.',revealed:false,critical:false},
+      ],
+      comp:[
+        {text:'Distribuidora Andes ofrece <strong>$4.220/unidad</strong> vs. nuestros $4.494. Una diferencia del 6.5% que en márgenes ajustados es decisiva.',revealed:false,critical:true},
+        {text:'Andes no tiene la cobertura de Rendija en el sur del país. Hay una ventaja competitiva que no estamos aprovechando.',revealed:false,critical:false},
+      ],
+      segments:[
+        {text:'Las tiendas de barrio (segmento C) migraron primero — son las más sensibles al precio. El retail moderno aún no ha movido.',revealed:false,critical:false},
+        {text:'El Oriente antioqueño (zona de Héctor) concentra el <strong>38% de la migración</strong> detectada. Es el epicentro.',revealed:false,critical:true},
+      ],
+      forecast:[
+        {text:'Si no se corrige el precio antes del jueves, <strong>la proyección es −31% adicional</strong> en octubre. Don Héctor tomará una decisión.',revealed:false,critical:true},
+        {text:'Si se ajusta el precio un 5% a la baja y se retiene a los clientes top, el margen operativo se mantiene positivo (+1.2%).',revealed:false,critical:false},
+      ],
+    },
+    guide:{
+      timeline:'La línea de tiempo es la herramienta más poderosa para detectar causalidad. Busca el evento que precede al efecto.',
+      price:'La elasticidad precio mide qué tan sensible es la demanda a los cambios de precio. Alta elasticidad = mercado muy competitivo.',
+      comp:'Conocer el precio del competidor no es espionaje — es inteligencia de mercado básica. ¿Cuánto vale ese 6.5%?',
+      segments:'No todos los clientes reaccionan igual. Segmentar por sensibilidad al precio revela dónde actuar primero.',
+      forecast:'Una proyección no es certeza — es el mapa del riesgo. ¿Qué pasa si no haces nada? Esa es la pregunta más importante.',
+    }
+  }
+};
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let G={
+  idx:0,score:0,d:{d1:null,d2:null,d3:null},flags:{},
+  charts:{},currentScene:null,
+  dr:{visited:new Set(),room:null,activeTab:null,insightScore:0},
+};
+
+// ════════════════════════════════════════════
+// TRANSITIONS & SCREENS
+// ════════════════════════════════════════════
+function transitionTo(fn){
+  const c=document.getElementById('curtain');
+  c.classList.add('closing');
+  setTimeout(()=>{fn();c.classList.remove('closing');c.classList.add('opening');setTimeout(()=>c.classList.remove('opening'),350)},350);
+}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+id).classList.add('active')}
+function startGame(){
+  G={idx:0,score:0,d:{d1:null,d2:null,d3:null},flags:{},charts:{},currentScene:null,dr:{visited:new Set(),room:null,activeTab:null,insightScore:0}};
+  updateHUD();
+  AUDIO.stopMusic();
+  transitionTo(()=>{
+    showScreen('game');
+    document.getElementById('music-btn').classList.add('visible');
+    setTimeout(()=>AUDIO.startMusic(),800);
+    renderNode();
+  });
+}
+function replayGame(){
+  AUDIO.stopMusic();
+  document.getElementById('screen-credits').classList.remove('on');
+  startGame();
+}
+function goTitle(){
+  AUDIO.stopMusic();
+  document.getElementById('screen-credits').classList.remove('on');
+  document.getElementById('music-btn').classList.remove('visible');
+  transitionTo(()=>showScreen('title'));
+}
+
+// ════════════════════════════════════════════
+// NODE SYSTEM
+// ════════════════════════════════════════════
+function playable(){return STORY.filter(n=>!n.branch||G.flags[n.branch])}
+function current(){return playable()[G.idx]||null}
+function setScene(id){
+  if(!id||id===G.currentScene)return;G.currentScene=id;
+  const svg=document.getElementById('scene-svg');
+  const w=window.innerWidth,h=window.innerHeight;
+  svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  svg.innerHTML=(SCENES[id]||SCENES.office)(w,h);
+  spawnParticles(id);
+}
+function renderNode(){
+  const n=current();if(!n)return;
+  setScene(n.scene);
+  if(n.type==='scene'||n.type==='dialogue') showDlg(n);
+  else if(n.type==='decision') showDec(n);
+  else if(n.type==='dataroom') showDlgBeforeRoom(n);
+  else if(n.type==='email') showDlgBeforeEmail();
+}
+
+// ════════════════════════════════════════════
+// DIALOGUE
+// ════════════════════════════════════════════
+function showDlg(n){
+  document.getElementById('dec-box').style.display='none';
+  document.getElementById('dlg-box').style.display='';
+  document.getElementById('dlg-cont').onclick=advance;
+  document.getElementById('dlg-cont').style.display='flex';
+  const layer=document.getElementById('char-layer');
+  const av=document.getElementById('char-avatar');
+  if(n.char&&n.char!=='narrator'){
+    const cd=CHARS[n.char];
+    layer.classList.remove('hidden');av.innerHTML=renderChar(n.char);
+    document.getElementById('dlg-spk').style.display='flex';
+    document.getElementById('spk-name').textContent=cd.name;
+    document.getElementById('spk-dot').style.background=cd.color;
+  } else {
+    layer.classList.add('hidden');
+    document.getElementById('dlg-spk').style.display='none';
+  }
+  const box=document.getElementById('dlg-box');
+  box.classList.add('out');
+  setTimeout(()=>{box.classList.remove('out');typeText('dlg-text',n.text,()=>{const sub=document.getElementById('dlg-sub');if(n.sub){sub.textContent=n.sub;sub.style.display='block'}else sub.style.display='none'})},200);
+}
+let _tt=null;
+function typeText(elId,txt,cb){
+  clearTimeout(_tt);const el=document.getElementById(elId);el.textContent='';let i=0;
+  const spd=Math.max(10,20-txt.length*.04);
+  function tick(){if(i<=txt.length){el.textContent=txt.slice(0,i);i++;_tt=setTimeout(tick,spd)}else if(cb)cb()}
+  tick();
+}
+function advance(){
+  AUDIO.playClick();
+  const box=document.getElementById('dlg-box');box.classList.add('out');
+  setTimeout(()=>{box.classList.remove('out');G.idx++;const n=current();if(!n)return;
+    if(n.type==='dataroom') openDataRoom(n.roomId);
+    else if(n.type==='email') openEmail();
+    else renderNode();
+  },220);
+}
+
+// ════════════════════════════════════════════
+// DECISION
+// ════════════════════════════════════════════
+function showDec(n){
+  document.getElementById('dlg-box').style.display='none';
+  document.getElementById('char-layer').classList.add('hidden');
+  const db=document.getElementById('dec-box');db.style.display='block';
+  document.getElementById('dec-tag').textContent=`Decisión ${n.decNum} de 3`;
+  document.getElementById('dec-q').textContent=n.question;
+  const opts=document.getElementById('dec-opts');opts.innerHTML='';
+  n.options.forEach((o,i)=>{
+    const b=document.createElement('button');b.className='opt';
+    b.innerHTML=`<div class="opt-key">${['A','B','C'][i]}</div><div class="opt-lbl">${o.label}</div><div class="opt-sub">${o.sub}</div>`;
+    b.onclick=()=>pick(n,o);opts.appendChild(b);
+  });
+  updateDots(n.decNum);
+}
+function updateDots(cur){[1,2,3].forEach(n=>{const d=document.getElementById('dd'+n);d.className='dd';if(n<cur)d.classList.add('done');else if(n===cur)d.classList.add('now')})}
+function pick(node,opt){
+  if(node.decNum===1)G.d.d1=opt.id;
+  if(node.decNum===2)G.d.d2=opt.id;
+  if(node.decNum===3)G.d.d3=opt.id;
+  if(opt.id==='d1_margin')G.flags.d1b=true;
+  if(opt.id==='d1_volume')G.flags.d1a=true;
+  if(opt.id==='d2_andres')G.flags.d2a=true;
+  if(opt.id==='d2_valeria')G.flags.d2b=true;
+  if(opt.id==='d2_hector')G.flags.d2c=true;
+  addScore(opt.score);
+  AUDIO.playDecision();
+  const r=document.getElementById('dec-box').getBoundingClientRect();
+  showPop('+'+opt.score,r.left+r.width/2,r.top+20);
+  G.idx++;
+  if(opt.next==='ending_resolver'){setTimeout(resolveEnding,300);return}
+  setTimeout(renderNode,200);
+}
+
+// ════════════════════════════════════════════
+// HUD & SCORE
+// ════════════════════════════════════════════
+function addScore(pts){G.score=Math.min(100,G.score+pts);updateHUD()}
+function updateHUD(){document.getElementById('snum').textContent=G.score;document.getElementById('sfill').style.width=G.score+'%'}
+function showPop(txt,x,y){
+  AUDIO.playScore();
+  const el=document.createElement('div');el.className='spop';el.textContent=txt;el.style.left=x+'px';el.style.top=y+'px';document.body.appendChild(el);setTimeout(()=>el.remove(),1900);
+}
+
+// ════════════════════════════════════════════
+// DATA ROOM ENGINE
+// ════════════════════════════════════════════
+function showDlgBeforeRoom(n){
+  document.getElementById('dec-box').style.display='none';
+  document.getElementById('dlg-box').style.display='';
+  document.getElementById('char-layer').classList.add('hidden');
+  document.getElementById('dlg-spk').style.display='none';
+  document.getElementById('dlg-text').textContent='Valeria abre la sala de análisis. Los datos del trimestre están listos para ser explorados.';
+  const sub=document.getElementById('dlg-sub');
+  sub.textContent='Explora todas las vistas antes de tomar tu decisión. Cada dato cuenta.';
+  sub.style.display='block';
+  document.getElementById('dlg-cont').onclick=()=>openDataRoom(n.roomId);
+  document.getElementById('dlg-cont').style.display='flex';
+}
+
+function openDataRoom(roomId){
+  const room=DATA_ROOMS[roomId];
+  G.dr.room=roomId;G.dr.visited=new Set();G.dr.insightScore=0;
+
+  // Destroy existing charts
+  Object.values(G.charts).forEach(c=>{try{c.destroy()}catch(e){}});
+  G.charts={};
+
+  document.getElementById('dr-eyebrow').textContent=room.eyebrow;
+  document.getElementById('dr-title').textContent=room.title;
+
+  // Tabs
+  const tabsEl=document.getElementById('dr-tabs');
+  tabsEl.innerHTML=room.tabs.map(t=>`
+    <div class="dr-tab" id="tab-${t.id}" onclick="switchTab('${t.id}')">
+      ${t.icon} ${t.label}
+      <span class="tab-new"></span>
+    </div>`).join('');
+
+  // Progress dots
+  document.getElementById('tp-dots').innerHTML=room.tabs.map(t=>`<div class="tp-dot" id="tpd-${t.id}"></div>`).join('');
+
+  // Reset close button
+  document.getElementById('dr-cta-btn').disabled=true;
+  document.getElementById('dr-as-fill').style.width='0%';
+  document.getElementById('dr-as-num').textContent='0 / '+room.tabs.length+' vistas';
+  document.getElementById('dr-cta-note').innerHTML=`Explora al menos <strong>3 vistas</strong> antes de decidir`;
+
+  document.getElementById('data-room').classList.add('on');
+  setTimeout(()=>switchTab(room.tabs[0].id),50);
+}
+
+function switchTab(tabId){
+  const roomId=G.dr.room;const room=DATA_ROOMS[roomId];
+  G.dr.activeTab=tabId;
+
+  // Mark visited
+  G.dr.visited.add(tabId);
+
+  // Update tabs UI
+  document.querySelectorAll('.dr-tab').forEach(t=>{
+    t.classList.remove('active');
+    if(t.id==='tab-'+tabId) t.classList.add('active');
+  });
+  room.tabs.forEach(t=>{
+    const el=document.getElementById('tab-'+t.id);
+    if(el&&G.dr.visited.has(t.id)) el.classList.add('visited');
+  });
+
+  // Update progress dots
+  room.tabs.forEach(t=>{
+    const d=document.getElementById('tpd-'+t.id);
+    if(d) d.classList.toggle('v',G.dr.visited.has(t.id));
+  });
+
+  // Update analysis score
+  const pct=Math.round(G.dr.visited.size/room.tabs.length*100);
+  document.getElementById('dr-as-fill').style.width=pct+'%';
+  document.getElementById('dr-as-num').textContent=G.dr.visited.size+' / '+room.tabs.length+' vistas';
+
+  // Enable CTA after 3 tabs
+  const ctaBtn=document.getElementById('dr-cta-btn');
+  if(G.dr.visited.size>=3){
+    ctaBtn.disabled=false;
+    document.getElementById('dr-cta-note').innerHTML=`<strong>${G.dr.visited.size} vistas</strong> exploradas — puedes tomar tu decisión`;
+  }
+  if(G.dr.visited.size===room.tabs.length){
+    document.getElementById('tp-hint').textContent='¡Análisis completo! DataScore™ máximo.';
+    document.getElementById('tp-hint').style.color='var(--accent2)';
+  }
+
+  // Reveal insight for this tab
+  revealInsight(tabId);
+
+  // Render tab content
+  renderTabContent(roomId, tabId);
+}
+
+function revealInsight(tabId){
+  const room=DATA_ROOMS[G.dr.room];
+  const items=room.insights[tabId];if(!items)return;
+  items.forEach(ins=>{
+    if(!ins.revealed){
+      ins.revealed=true;
+      G.dr.insightScore+=1;
+      addScore(3);
+      AUDIO.playInsight();
+      showPop('+3',window.innerWidth-120,80);
+    }
+  });
+  renderSidebar();
+}
+
+function renderSidebar(){
+  const room=DATA_ROOMS[G.dr.room];
+  const tabId=G.dr.activeTab;
+  const items=room.insights[tabId]||[];
+  const guide=room.guide[tabId]||'';
+  const sidebar=document.getElementById('dr-sidebar');
+  sidebar.innerHTML=`
+    <div class="guide-panel">
+      <div class="guide-icon">◈</div>
+      <div class="guide-title">Guía analítica</div>
+      <div class="guide-text">${guide}</div>
+      <div class="guide-hint">Pregunta clave: ¿qué te dice este dato sobre la causa del problema?</div>
+    </div>
+    <div class="insight-panel">
+      <div class="ip-title">Insights descubiertos</div>
+      ${items.map(ins=>`
+        <div class="ip-item ${ins.revealed?'revealed':''} ${ins.critical&&ins.revealed?'critical':''}">
+          ${ins.revealed?ins.text:'<span style="color:var(--faint)">Explora esta vista para revelar el insight</span>'}
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderTabContent(roomId, tabId){
+  const main=document.getElementById('dr-main');
+  // Destroy old charts
+  Object.entries(G.charts).forEach(([k,c])=>{
+    if(k.startsWith(tabId)){try{c.destroy()}catch(e){};delete G.charts[k]}
+  });
+  main.innerHTML='';
+
+  if(roomId==='room1'){
+    if(tabId==='overview') renderOverview(main);
+    else if(tabId==='cats') renderCategories(main);
+    else if(tabId==='margins') renderMargins(main);
+    else if(tabId==='clients') renderClients(main);
+    else if(tabId==='bench') renderBenchmark(main);
+  } else {
+    if(tabId==='timeline') renderTimeline(main);
+    else if(tabId==='price') renderElasticity(main);
+    else if(tabId==='comp') renderCompetencia(main);
+    else if(tabId==='segments') renderSegments(main);
+    else if(tabId==='forecast') renderForecast(main);
+  }
+}
+
+// ─── TAB RENDERERS ─────────────────────────────────────────
+
+function renderOverview(main){
+  main.innerHTML=`
+    <div class="kpi-grid">
+      <div class="kpi-card highlight"><div class="kpi-lbl">Ventas brutas Q4</div><div class="kpi-val neg">−18%</div><div class="kpi-delta neg">vs Q3: −$420M</div></div>
+      <div class="kpi-card"><div class="kpi-lbl">Margen operativo</div><div class="kpi-val warn">−3%</div><div class="kpi-delta warn">Caída menor que ventas</div></div>
+      <div class="kpi-card"><div class="kpi-lbl">Volumen total</div><div class="kpi-val neg">−8.3%</div><div class="kpi-delta neg">14,583 vs 15,900 un.</div></div>
+      <div class="kpi-card"><div class="kpi-lbl">EBITDA</div><div class="kpi-val warn">$182M</div><div class="kpi-delta warn">−3% vs Q3</div></div>
+      <div class="kpi-card highlight"><div class="kpi-lbl">Días inventario</div><div class="kpi-val neg">26 días</div><div class="kpi-delta neg">↑ desde 18 días</div></div>
+      <div class="kpi-card"><div class="kpi-lbl">Clientes activos</div><div class="kpi-val">847</div><div class="kpi-delta neg">−12 vs Q3</div></div>
+    </div>
+    <div class="chart-card" style="animation-delay:0.1s">
+      <div class="cc-title">Waterfall de ventas — ¿Dónde se perdió el valor?</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="chart-waterfall"></canvas></div>
+    </div>
+    <div class="chart-card" style="animation-delay:0.2s">
+      <div class="cc-title">Evolución mensual Q3→Q4</div>
+      <div class="chart-wrap" style="height:160px"><canvas id="chart-trend"></canvas></div>
+    </div>`;
+  setTimeout(()=>{
+    G.charts['overview-wf']=new Chart(document.getElementById('chart-waterfall').getContext('2d'),{
+      type:'bar',
+      data:{labels:['Base Q3','Lácteos','Snacks','Aseo','Total Q4'],
+        datasets:[{data:[100,null,null,null,82],backgroundColor:['rgba(107,158,94,0.3)','rgba(0,0,0,0)','rgba(0,0,0,0)','rgba(0,0,0,0)','rgba(107,158,94,0.5)'],borderColor:['#6b9e5e','','','','#6b9e5e'],borderWidth:1,borderRadius:2},
+          {data:[null,-16,-0.7,+2.5,null],backgroundColor:['','rgba(191,88,88,0.7)','rgba(191,88,88,0.3)','rgba(107,158,94,0.5)',''],borderColor:['','#bf5858','#bf5858','#6b9e5e',''],borderWidth:1,borderRadius:2}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>(ctx.raw>0?'+':'')+ctx.raw+'%'}}},scales:{x:{ticks:{color:'#7a7875',font:{family:'DM Sans'}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'#7a7875',font:{family:'DM Sans'},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.04)'}}}}
+    });
+    G.charts['overview-tr']=new Chart(document.getElementById('chart-trend').getContext('2d'),{
+      type:'line',
+      data:{labels:['Jul','Ago','Sep','Oct'],
+        datasets:[{label:'Ventas brutas',data:[100,96,91,82],borderColor:'#6b9e5e',backgroundColor:'rgba(107,158,94,0.08)',tension:0.4,pointRadius:4,pointBackgroundColor:'#6b9e5e'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7875',font:{family:'DM Sans',size:11}}}},scales:{x:{ticks:{color:'#7a7875',font:{family:'DM Sans'}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'#7a7875',font:{family:'DM Sans'},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.04)'}}}}
+    });
+  },100);
+}
+
+function renderCategories(main){
+  main.innerHTML=`
+    <div class="chart-2col">
+      <div class="chart-card"><div class="cc-title">Volumen Q3 vs Q4 por categoría</div><div class="chart-wrap" style="height:200px"><canvas id="chart-vol"></canvas></div></div>
+      <div class="chart-card"><div class="cc-title">Contribución a la caída total</div><div class="chart-wrap" style="height:200px"><canvas id="chart-contrib"></canvas></div></div>
+    </div>
+    <div class="chart-card" style="animation-delay:0.15s">
+      <div class="cc-title">Tabla detallada por categoría</div>
+      <table class="data-table">
+        <thead><tr><th>Categoría</th><th>Vol. Q3</th><th>Vol. Q4</th><th>Δ Vol.</th><th>Margen Q3</th><th>Margen Q4</th><th>Δ Margen</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Lácteos</strong></td><td>4,200</td><td>2,856</td><td class="neg">−32%</td><td>22%</td><td>28%</td><td class="pos">+6pp</td></tr>
+          <tr><td>Snacks</td><td>8,100</td><td>7,695</td><td class="neg">−5%</td><td>15%</td><td>16%</td><td class="pos">+1pp</td></tr>
+          <tr><td>Aseo</td><td>3,600</td><td>4,032</td><td class="pos">+12%</td><td>18%</td><td>14%</td><td class="neg">−4pp</td></tr>
+          <tr style="border-top:1px solid var(--border2)"><td><strong>Total</strong></td><td><strong>15,900</strong></td><td><strong>14,583</strong></td><td class="neg"><strong>−8.3%</strong></td><td><strong>18%</strong></td><td><strong>19%</strong></td><td class="pos"><strong>+1pp</strong></td></tr>
+        </tbody>
+      </table>
+    </div>`;
+  setTimeout(()=>{
+    G.charts['cats-vol']=new Chart(document.getElementById('chart-vol').getContext('2d'),{
+      type:'bar',data:{labels:['Lácteos','Snacks','Aseo'],datasets:[{label:'Q3',data:[4200,8100,3600],backgroundColor:'rgba(107,158,94,0.6)',borderRadius:2},{label:'Q4',data:[2856,7695,4032],backgroundColor:'rgba(107,158,94,0.2)',borderRadius:2}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7875',font:{family:'DM Sans',size:10}}}},scales:{x:{ticks:{color:'#7a7875',font:{family:'DM Sans',size:10}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'#7a7875',font:{family:'DM Sans',size:10}},grid:{color:'rgba(255,255,255,0.04)'}}}}
+    });
+    G.charts['cats-contrib']=new Chart(document.getElementById('chart-contrib').getContext('2d'),{
+      type:'doughnut',data:{labels:['Lácteos','Snacks','Aseo'],datasets:[{data:[94,4,2],backgroundColor:['rgba(191,88,88,0.8)','rgba(201,168,76,0.6)','rgba(107,158,94,0.4)'],borderColor:['#bf5858','#c9a84c','#6b9e5e'],borderWidth:1}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7875',font:{family:'DM Sans',size:11}}}}}
+    });
+  },100);
+}
+
+function renderMargins(main){
+  main.innerHTML=`
+    <div class="chart-card">
+      <div class="cc-title">Margen bruto vs. Volumen — relación inversa en lácteos</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="chart-mgvol"></canvas></div>
+      <div class="cc-subtitle" style="margin-top:8px;font-size:11px;color:var(--muted)">El margen sube cuando el precio sube — pero el volumen colapsa. El efecto neto es negativo.</div>
+    </div>
+    <div class="chart-card" style="animation-delay:0.1s">
+      <div class="cc-title">Radar de rentabilidad por categoría</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="chart-radar"></canvas></div>
+    </div>`;
+  setTimeout(()=>{
+    G.charts['mg-vol']=new Chart(document.getElementById('chart-mgvol').getContext('2d'),{
+      type:'bar',
+      data:{labels:['Lácteos','Snacks','Aseo'],
+        datasets:[
+          {label:'Δ Volumen (%)',data:[-32,-5,12],backgroundColor:['rgba(191,88,88,0.7)','rgba(191,88,88,0.4)','rgba(107,158,94,0.6)'],borderRadius:2,yAxisID:'y'},
+          {label:'Δ Margen bruto (pp)',data:[6,1,-4],type:'line',borderColor:'#c9a84c',backgroundColor:'rgba(201,168,76,0.1)',pointRadius:6,pointBackgroundColor:'#c9a84c',tension:0.3,yAxisID:'y1'},
+        ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7875',font:{family:'DM Sans',size:10}}}},scales:{x:{ticks:{color:'#7a7875',font:{family:'DM Sans'}},grid:{color:'rgba(255,255,255,0.04)'}},y:{type:'linear',position:'left',ticks:{color:'#bf5858',font:{family:'DM Sans'},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.04)'}},y1:{type:'linear',position:'right',ticks:{color:'#c9a84c',font:{family:'DM Sans'},callback:v=>v+'pp'},grid:{drawOnChartArea:false}}}}
+    });
+    G.charts['radar']=new Chart(document.getElementById('chart-radar').getContext('2d'),{
+      type:'radar',
+      data:{labels:['Volumen','Margen/un.','Crecimiento','Rentabilidad neta','Estabilidad'],
+        datasets:[
+          {label:'Lácteos',data:[20,75,10,45,30],borderColor:'#bf5858',backgroundColor:'rgba(191,88,88,0.1)',pointBackgroundColor:'#bf5858'},
+          {label:'Snacks',data:[80,55,60,65,85],borderColor:'#c9a84c',backgroundColor:'rgba(201,168,76,0.08)',pointBackgroundColor:'#c9a84c'},
+          {label:'Aseo',data:[75,35,85,40,70],borderColor:'#6b9e5e',backgroundColor:'rgba(107,158,94,0.08)',pointBackgroundColor:'#6b9e5e'},
+        ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7875',font:{family:'DM Sans',size:10}}}},scales:{r:{ticks:{color:'#7a7875',backdropColor:'transparent',font:{family:'DM Sans',size:9}},grid:{color:'rgba(255,255,255,0.06)'},pointLabels:{color:'#7a7875',font:{family:'DM Sans',size:10}}}}}
+    });
+  },100);
+}
+
+function renderClients(main){
+  main.innerHTML=`
+    <div class="chart-card">
+      <div class="cc-title">Concentración de clientes — lácteos (Regla 80/20)</div>
+      <div class="chart-wrap" style="height:180px"><canvas id="chart-pareto"></canvas></div>
+    </div>
+    <div class="chart-card" style="animation-delay:0.1s">
+      <div class="cc-title">Top 8 clientes — Lácteos Q4 (riesgo de fuga)</div>
+      <table class="data-table">
+        <thead><tr><th>Cliente</th><th>% Ventas lácteos</th><th>Δ Pedidos</th><th>Último pedido</th><th>Riesgo</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Don Héctor (Tendencias Oriente)</strong></td><td>23%<div class="bar-mini" style="width:60px;background:var(--danger)"></div></td><td class="neg">−38%</td><td>Sep 28</td><td class="risk-high">CRÍTICO</td></tr>
+          <tr><td>Supermercados Medina</td><td>14%<div class="bar-mini" style="width:36px;background:var(--warn)"></div></td><td class="neg">−22%</td><td>Oct 3</td><td class="risk-high">ALTO</td></tr>
+          <tr><td>Tiendas El Progreso</td><td>10%<div class="bar-mini" style="width:26px;background:var(--warn)"></div></td><td class="neg">−18%</td><td>Oct 7</td><td class="risk-mid">MEDIO</td></tr>
+          <tr><td>Distribuidora La 14</td><td>8%<div class="bar-mini" style="width:20px;background:var(--gold)"></div></td><td class="neg">−12%</td><td>Oct 9</td><td class="risk-mid">MEDIO</td></tr>
+          <tr><td>Mini-mercados Unidad</td><td>6%<div class="bar-mini" style="width:15px;background:var(--accent)"></div></td><td class="pos">+2%</td><td>Oct 11</td><td class="risk-low">BAJO</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+  setTimeout(()=>{
+    G.charts['pareto']=new Chart(document.getElementById('chart-pareto').getContext('2d'),{
+      type:'bar',data:{labels:['Top 1','Top 2','Top 3','Top 4','Top 5','Resto'],
+        datasets:[
+          {label:'% de ventas',data:[23,14,10,8,6,39],backgroundColor:['rgba(191,88,88,0.8)','rgba(191,88,88,0.65)','rgba(201,168,76,0.7)','rgba(201,168,76,0.55)','rgba(107,158,94,0.5)','rgba(107,158,94,0.3)'],borderRadius:2,yAxisID:'y'},
+          {label:'% acumulado',data:[23,37,47,55,61,100],type:'line',borderColor:'#c9a84c',pointRadius:4,pointBackgroundColor:'#c9a84c',tension:0.4,yAxisID:'y1'},
+        ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7875',font:{family:'DM Sans',size:10}}}},scales:{x:{ticks:{color:'#7a7875',font:{family:'DM Sans',size:10}},grid:{color:'rgba(255,255,255,0.04)'}},y:{type:'linear',position:'left',ticks:{color:'#7a7875',font:{family:'DM Sans',size:10},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.04)'},max:50},y1:{type:'linear',position:'right',ticks:{color:'#c9a84c',font:{family:'DM Sans',size:10},callback:v=>v+'%'},grid:{drawOnChartArea:false},max:100}}}
+    });
+  },100);
+}
+
+function renderBenchmark(main){
+  main.innerHTML=`
+    <div class="chart-card">
+      <div class="cc-title">Rendija vs. Sector distribución — crecimiento Q4</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="chart-bench"></canvas></div>
+    </div>
+    <div class="chart-card" style="animation-delay:0.1s">
+      <div class="cc-title">Posición competitiva — precio distribución lácteos ($/unidad)</div>
+      <table class="data-table">
+        <thead><tr><th>Distribuidor</th><th>Precio/unidad</th><th>Variación Q4</th><th>Market share aprox.</th></tr></thead>
+        <tbody>
+          <tr style="background:rgba(191,88,88,0.04)"><td><strong>Rendija S.A.S</strong></td><td class="neg"><strong>$4,494</strong></td><td class="neg">+7%</td><td>34%</td></tr>
+          <tr><td>Distribuidora Andes</td><td class="pos">$4,220</td><td>0%</td><td>28%</td></tr>
+          <tr><td>LogiMedellín</td><td>$4,380</td><td>+3%</td><td>19%</td></tr>
+          <tr><td>Otros</td><td>$4,310</td><td>+1%</td><td>19%</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+  setTimeout(()=>{
+    G.charts['bench']=new Chart(document.getElementById('chart-bench').getContext('2d'),{
+      type:'bar',data:{labels:['Rendija','Distribuidora Andes','LogiMedellín','Promedio sector'],
+        datasets:[{label:'Crecimiento Q4 (%)',data:[-18,+4.2,+1.8,+2.1],backgroundColor:['rgba(191,88,88,0.8)','rgba(107,158,94,0.7)','rgba(201,168,76,0.6)','rgba(90,143,192,0.5)'],borderRadius:2}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#7a7875',font:{family:'DM Sans'}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'#7a7875',font:{family:'DM Sans'},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.04)'}}}}
+    });
+  },100);
+}
+
+// ─── ROOM 2 TABS ─────────────────────────────────────────
+
+function renderTimeline(main){
+  main.innerHTML=`
+    <div class="chart-card">
+      <div class="cc-title">Correlación precio vs. volumen — Lácteos Alpes del Sur</div>
+      <div class="chart-wrap" style="height:240px"><canvas id="chart-tl"></canvas></div>
+      <div class="cc-subtitle" style="margin-top:10px;padding:10px 12px;background:rgba(201,168,76,0.06);border-left:2px solid var(--gold);border-radius:0 2px 2px 0;font-size:12px;color:var(--muted)">
+        El coeficiente de correlación R²=0.94 indica una relación casi perfecta entre precio y caída de volumen. No es coincidencia.
+      </div>
+    </div>
+    <div class="chart-card" style="animation-delay:0.1s">
+      <div class="cc-title">Eventos clave en la línea de tiempo</div>
+      <table class="data-table">
+        <thead><tr><th>Fecha</th><th>Evento</th><th>Impacto</th></tr></thead>
+        <tbody>
+          <tr><td>Junio 30</td><td>Precio distribución: $4,200/un.</td><td class="pos">Baseline</td></tr>
+          <tr style="background:rgba(191,88,88,0.04)"><td><strong>Julio 1</strong></td><td><strong>↑ Precio a $4,494/un. (+7%)</strong></td><td class="neg"><strong>Evento disparador</strong></td></tr>
+          <tr><td>Julio 15–31</td><td>Clientes exploran alternativas</td><td class="warn">Señal temprana (ignorada)</td></tr>
+          <tr><td>Agosto</td><td>Primeras migraciones a Andes</td><td class="neg">−11% volumen</td></tr>
+          <tr><td>Septiembre</td><td>Migración se acelera</td><td class="neg">−21% volumen</td></tr>
+          <tr style="background:rgba(201,168,76,0.04)"><td><strong>Octubre 7</strong></td><td><strong>Correo de Don Héctor</strong></td><td class="warn"><strong>Punto de no retorno</strong></td></tr>
+        </tbody>
+      </table>
+    </div>`;
+  setTimeout(()=>{
+    G.charts['tl']=new Chart(document.getElementById('chart-tl').getContext('2d'),{
+      type:'line',
+      data:{labels:['Jun','Jul','Ago','Sep','Oct'],
+        datasets:[
+          {label:'Precio distrib. ($/un.)',data:[4200,4494,4494,4494,4494],borderColor:'#c9a84c',backgroundColor:'rgba(201,168,76,0.06)',tension:0.2,pointRadius:5,pointBackgroundColor:'#c9a84c',yAxisID:'y'},
+          {label:'Volumen vendido (unidades)',data:[1400,1250,1110,876,null],borderColor:'#6b9e5e',backgroundColor:'rgba(107,158,94,0.08)',tension:0.3,pointRadius:5,pointBackgroundColor:'#6b9e5e',yAxisID:'y1'},
+        ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7875',font:{family:'DM Sans',size:11}}}},scales:{x:{ticks:{color:'#7a7875',font:{family:'DM Sans'}},grid:{color:'rgba(255,255,255,0.04)'}},y:{type:'linear',position:'left',ticks:{color:'#c9a84c',font:{family:'DM Sans'},callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(255,255,255,0.04)'},title:{display:true,text:'Precio ($)',color:'#c9a84c',font:{size:10}}},y1:{type:'linear',position:'right',ticks:{color:'#6b9e5e',font:{family:'DM Sans'},callback:v=>v+' un.'},grid:{drawOnChartArea:false},title:{display:true,text:'Volumen',color:'#6b9e5e',font:{size:10}}}}}
+    });
+  },100);
+}
+
+function renderElasticity(main){
+  main.innerHTML=`
+    <div class="chart-card">
+      <div class="cc-title">Curva de elasticidad precio-demanda — Lácteos</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="chart-elas"></canvas></div>
+      <div class="cc-subtitle" style="margin-top:8px;font-size:11px;color:var(--muted)">Elasticidad = −3.2. Por cada 1% de aumento en precio, el volumen cae 3.2%. Mercado altamente sensible.</div>
+    </div>
+    <div class="chart-card" style="animation-delay:0.1s">
+      <div class="cc-title">Elasticidad comparada por categoría</div>
+      <table class="data-table">
+        <thead><tr><th>Categoría</th><th>Elasticidad</th><th>Interpretación</th><th>¿Subir precio?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Lácteos</strong></td><td class="neg"><strong>−3.2</strong></td><td>Muy sensible al precio</td><td class="neg">No</td></tr>
+          <tr><td>Snacks</td><td class="warn">−1.1</td><td>Moderadamente sensible</td><td class="warn">Con cautela</td></tr>
+          <tr><td>Aseo</td><td class="pos">−0.8</td><td>Poco sensible al precio</td><td class="pos">Sí</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+  setTimeout(()=>{
+    const precios=[4000,4100,4200,4300,4400,4494,4600,4700];
+    const demanda=precios.map(p=>Math.round(1650*Math.pow(p/4200,-3.2)));
+    G.charts['elas']=new Chart(document.getElementById('chart-elas').getContext('2d'),{
+      type:'line',data:{labels:precios.map(p=>'$'+p.toLocaleString()),
+        datasets:[{label:'Demanda estimada (un.)',data:demanda,borderColor:'#6b9e5e',backgroundColor:'rgba(107,158,94,0.08)',tension:0.4,pointRadius:4,pointBackgroundColor:precios.map(p=>p===4494?'#bf5858':'#6b9e5e'),pointRadius:precios.map(p=>p===4494?8:4)}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7875',font:{family:'DM Sans',size:10}}},tooltip:{callbacks:{label:ctx=>'Demanda: '+ctx.raw+' un.'}}},scales:{x:{ticks:{color:'#7a7875',font:{family:'DM Sans',size:9}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'#7a7875',font:{family:'DM Sans',size:10}},grid:{color:'rgba(255,255,255,0.04)'}}}}
+    });
+  },100);
+}
+
+function renderCompetencia(main){
+  main.innerHTML=`
+    <div class="chart-2col">
+      <div class="chart-card"><div class="cc-title">Precios distribución lácteos</div><div class="chart-wrap" style="height:200px"><canvas id="chart-cp1"></canvas></div></div>
+      <div class="chart-card"><div class="cc-title">Cobertura geográfica</div><div class="chart-wrap" style="height:200px"><canvas id="chart-cp2"></canvas></div></div>
+    </div>
+    <div class="chart-card" style="animation-delay:0.1s">
+      <div class="cc-title">Análisis de ventajas competitivas</div>
+      <table class="data-table">
+        <thead><tr><th>Factor</th><th>Rendija</th><th>Andes</th><th>LogiMedellín</th></tr></thead>
+        <tbody>
+          <tr><td>Precio lácteos</td><td class="neg">$4,494 ↑7%</td><td class="pos">$4,220 estable</td><td class="warn">$4,380 +3%</td></tr>
+          <tr><td>Cobertura</td><td class="pos">6 ciudades</td><td class="warn">3 ciudades</td><td class="warn">2 ciudades</td></tr>
+          <tr><td>Tiempo entrega</td><td class="pos">24h</td><td class="warn">36h</td><td class="neg">48h</td></tr>
+          <tr><td>Red de frío</td><td class="pos">Completa</td><td class="warn">Parcial</td><td class="neg">Limitada</td></tr>
+          <tr><td>Crédito a clientes</td><td class="pos">30 días</td><td class="warn">15 días</td><td class="neg">Contado</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+  setTimeout(()=>{
+    G.charts['cp1']=new Chart(document.getElementById('chart-cp1').getContext('2d'),{
+      type:'bar',data:{labels:['Rendija','Andes','LogiMed.','Promedio'],datasets:[{data:[4494,4220,4380,4360],backgroundColor:['rgba(191,88,88,0.8)','rgba(107,158,94,0.7)','rgba(201,168,76,0.6)','rgba(90,143,192,0.5)'],borderRadius:2}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#7a7875',font:{family:'DM Sans',size:10}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'#7a7875',font:{family:'DM Sans',size:10},callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(255,255,255,0.04)'},min:4000}}}
+    });
+    G.charts['cp2']=new Chart(document.getElementById('chart-cp2').getContext('2d'),{
+      type:'radar',data:{labels:['Antioquia','Bogotá','Valle','Costa','Eje Caf.','Santander'],datasets:[{label:'Rendija',data:[9,7,6,4,8,3],borderColor:'#6b9e5e',backgroundColor:'rgba(107,158,94,0.1)',pointBackgroundColor:'#6b9e5e'},{label:'Andes',data:[7,3,2,1,4,2],borderColor:'#bf5858',backgroundColor:'rgba(191,88,88,0.08)',pointBackgroundColor:'#bf5858'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7875',font:{family:'DM Sans',size:10}}}},scales:{r:{ticks:{color:'#7a7875',backdropColor:'transparent',font:{family:'DM Sans',size:8}},grid:{color:'rgba(255,255,255,0.06)'},pointLabels:{color:'#7a7875',font:{family:'DM Sans',size:9}}}}}
+    });
+  },100);
+}
+
+function renderSegments(main){
+  main.innerHTML=`
+    <div class="chart-card">
+      <div class="cc-title">Migración por segmento de cliente</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="chart-seg"></canvas></div>
+    </div>
+    <div class="chart-card" style="animation-delay:0.1s">
+      <div class="cc-title">Distribución geográfica de la caída — Lácteos Q4</div>
+      <div class="chart-wrap" style="height:180px"><canvas id="chart-geo"></canvas></div>
+      <div class="cc-subtitle" style="margin-top:8px;font-size:11px;color:var(--gold)">⚠ El Oriente antioqueño (zona de Don Héctor) concentra el 38% de la caída total.</div>
+    </div>`;
+  setTimeout(()=>{
+    G.charts['seg']=new Chart(document.getElementById('chart-seg').getContext('2d'),{
+      type:'bar',data:{labels:['Tiendas barrio','Minimercados','Supermercados','Retail moderno'],
+        datasets:[
+          {label:'Q3 (unidades)',data:[580,410,320,90],backgroundColor:'rgba(107,158,94,0.5)',borderRadius:2},
+          {label:'Q4 (unidades)',data:[285,310,210,85],backgroundColor:'rgba(191,88,88,0.5)',borderRadius:2},
+        ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7875',font:{family:'DM Sans',size:10}}}},scales:{x:{ticks:{color:'#7a7875',font:{family:'DM Sans',size:10}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'#7a7875',font:{family:'DM Sans',size:10}},grid:{color:'rgba(255,255,255,0.04)'}}}}
+    });
+    G.charts['geo']=new Chart(document.getElementById('chart-geo').getContext('2d'),{
+      type:'doughnut',data:{labels:['Oriente Ant.','Medellín','Eje Cafetero','Bogotá','Otros'],datasets:[{data:[38,24,18,12,8],backgroundColor:['rgba(191,88,88,0.8)','rgba(201,168,76,0.7)','rgba(201,168,76,0.5)','rgba(107,158,94,0.5)','rgba(90,143,192,0.4)'],borderColor:['#bf5858','#c9a84c','#c9a84c','#6b9e5e','#5a8fc0'],borderWidth:1}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7875',font:{family:'DM Sans',size:10}}}}}
+    });
+  },100);
+}
+
+function renderForecast(main){
+  main.innerHTML=`
+    <div class="chart-card">
+      <div class="cc-title">Proyección de ventas lácteos — 3 escenarios</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="chart-fc"></canvas></div>
+    </div>
+    <div class="chart-card" style="animation-delay:0.1s">
+      <div class="cc-title">Impacto financiero por escenario</div>
+      <table class="data-table">
+        <thead><tr><th>Escenario</th><th>Acción</th><th>Volumen Nov.</th><th>Margen oper.</th><th>Héctor</th></tr></thead>
+        <tbody>
+          <tr style="background:rgba(191,88,88,0.04)"><td class="neg"><strong>Sin acción</strong></td><td>Mantener precio</td><td class="neg">−31% adicional</td><td class="neg">−2.1%</td><td class="neg">Se va</td></tr>
+          <tr style="background:rgba(107,158,94,0.04)"><td class="pos"><strong>Ajuste precio −5%</strong></td><td>Volver a $4,270</td><td class="pos">Recupera 60%</td><td class="pos">+1.2%</td><td class="pos">Se queda</td></tr>
+          <tr><td class="warn"><strong>Pivote portafolio</strong></td><td>Crece aseo, baja lácteos</td><td class="warn">Neutro</td><td class="warn">+0.4%</td><td class="warn">Probable</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+  setTimeout(()=>{
+    G.charts['fc']=new Chart(document.getElementById('chart-fc').getContext('2d'),{
+      type:'line',
+      data:{labels:['Sep','Oct','Nov (proy.)','Dic (proy.)'],
+        datasets:[
+          {label:'Sin acción',data:[876,null,600,420],borderColor:'#bf5858',backgroundColor:'rgba(191,88,88,0.06)',tension:0.3,borderDash:[5,4],pointRadius:4},
+          {label:'Ajuste precio −5%',data:[876,null,820,910],borderColor:'#6b9e5e',backgroundColor:'rgba(107,158,94,0.08)',tension:0.3,pointRadius:4},
+          {label:'Pivote portafolio',data:[876,null,720,760],borderColor:'#c9a84c',backgroundColor:'rgba(201,168,76,0.06)',tension:0.3,borderDash:[3,3],pointRadius:4},
+        ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a7875',font:{family:'DM Sans',size:10}}}},scales:{x:{ticks:{color:'#7a7875',font:{family:'DM Sans'}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'#7a7875',font:{family:'DM Sans'},callback:v=>v+' un.'},grid:{color:'rgba(255,255,255,0.04)'}}}}
+    });
+  },100);
+}
+
+// ════════════════════════════════════════════
+// CLOSE DATA ROOM
+// ════════════════════════════════════════════
+function closeDataRoom(){
+  const room=DATA_ROOMS[G.dr.room];
+  const bonus=G.dr.visited.size>=room.tabs.length?10:G.dr.visited.size>=3?5:0;
+  if(bonus>0){addScore(bonus);showPop('+'+bonus+' análisis completo!',window.innerWidth/2,80)}
+  document.getElementById('data-room').classList.remove('on');
+  Object.values(G.charts).forEach(c=>{try{c.destroy()}catch(e){}});G.charts={};
+  G.idx++;renderNode();
+}
+
+// ════════════════════════════════════════════
+// EMAIL
+// ════════════════════════════════════════════
+function showDlgBeforeEmail(){renderNode()}
+function openEmail(){document.getElementById('ov-email').classList.add('on')}
+function closeEmail(){document.getElementById('ov-email').classList.remove('on');G.idx++;renderNode()}
+
+// ════════════════════════════════════════════
+// ENDING
+// ════════════════════════════════════════════
+function resolveEnding(){
+  const {d1,d2,d3}=G.d;
+  let id;
+  if(d1==='d1_margin'&&d2==='d2_valeria'&&d3==='d3_pivot') id='a';
+  else if(d3==='d3_pivot'||(d3==='d3_time'&&G.score>=45)) id='b';
+  else id='c';
+  showEnding(id);
+}
+const ENDS={
+  a:{badge:'Final A — Decisión correcta y fundamentada',bc:'ba',title:'La Decisión Correcta,\nBien Fundamentada',sub:'"El dato que nadie quería ver"',story:'La junta aprueba el plan de ajuste de precios en lácteos. Carlos Restrepo pide ver el análisis de correlación y asiente. Marcela aprueba el presupuesto. Julián propone seguimiento semanal con dashboard en tiempo real.',res:'Esa tarde, Sofía llama a Don Héctor con una propuesta revisada. Acepta.',lesson:'Los mejores datos son los que te incomodan. El análisis correcto no siempre confirma lo que ya creías.',bg:'radial-gradient(ellipse 70% 50% at 50% 60%, rgba(107,158,94,0.14) 0%, transparent 70%)',sc:'#8cbf7d'},
+  b:{badge:'Final B — Correcta, mal comunicada',bc:'bb',title:'Tenías Razón,\nPero No Pudiste Demostrarlo',sub:'"Un insight sin evidencia es solo una opinión"',story:'Marcela hace preguntas que Sofía no puede responder con datos. Carlos propone esperar. Julián queda neutral. Dos semanas para preparar un análisis más sólido.',res:'No es un fracaso, pero tampoco una victoria. El tiempo corre y Don Héctor espera.',lesson:'Un insight sin contexto es solo una opinión. Los datos necesitan narrativa para volverse decisiones.',bg:'radial-gradient(ellipse 70% 50% at 50% 60%, rgba(201,168,76,0.1) 0%, transparent 70%)',sc:'#c9a84c'},
+  c:{badge:'Final C — Decisión apresurada',bc:'bc',title:'Actuaste Rápido.\nActuaste Mal.',sub:'"La presión no reemplaza el análisis"',story:'La junta aprueba el recorte. A los 30 días, los resultados no mejoran. Don Héctor se fue con Distribuidora Andes. Andrés renunció. Carlos pide explicaciones.',res:'El problema no era el costo — era el precio. Y los datos lo decían desde el principio.',lesson:'La presión de decidir rápido es real. Pero una decisión sin datos no es velocidad — es ruleta.',bg:'radial-gradient(ellipse 70% 50% at 50% 60%, rgba(192,88,88,0.1) 0%, transparent 70%)',sc:'#bf5858'},
+};
+function showEnding(id){
+  const e=ENDS[id];const {d1,d2,d3}=G.d;
+  document.getElementById('end-bg').style.background=e.bg;
+  document.getElementById('end-badge').textContent=e.badge;
+  document.getElementById('end-badge').className='end-badge '+e.bc;
+  document.getElementById('end-title').textContent=e.title;
+  document.getElementById('end-sub').textContent=e.sub;
+  document.getElementById('end-story').textContent=e.story;
+  document.getElementById('end-res').textContent=e.res;
+  document.getElementById('lesson-q').textContent=e.lesson;
+  const sn=document.getElementById('sbig');sn.innerHTML='0<span class="denom"> /100</span>';sn.style.color=e.sc;
+  const D1={d1_margin:'D1: Margen ✓',d1_volume:'D1: Volumen'},D2={d2_valeria:'D2: Valeria ✓',d2_andres:'D2: Andrés',d2_hector:'D2: Héctor'},D3={d3_pivot:'D3: Pivotar ✓',d3_cut:'D3: Recortar',d3_time:'D3: Más tiempo'},Q1={d1_margin:'g',d1_volume:'b'},Q2={d2_valeria:'g',d2_andres:'b',d2_hector:'m'},Q3={d3_pivot:'g',d3_cut:'b',d3_time:'m'};
+  document.getElementById('recap').innerHTML=[`<div class="rc ${Q1[d1]||''}">${D1[d1]||'—'}</div>`,`<div class="rc ${Q2[d2]||''}">${D2[d2]||'—'}</div>`,`<div class="rc ${Q3[d3]||''}">${D3[d3]||'—'}</div>`].join('');
+
+  // Audio feedback by ending
+  AUDIO.stopMusic();
+  setTimeout(()=>{
+    if(id==='a') AUDIO.playEndingGood();
+    else AUDIO.playEndingBad();
+  },500);
+
+  transitionTo(()=>{
+    showScreen('ending');
+    setTimeout(()=>{
+      const target=G.score,start=performance.now();
+      function anim(now){const p=Math.min((now-start)/1500,1),v=Math.round((1-Math.pow(1-p,3))*target);sn.innerHTML=v+'<span class="denom"> /100</span>';document.getElementById('sfill-e').style.width=v+'%';if(p<1)requestAnimationFrame(anim);else{sn.innerHTML=target+'<span class="denom"> /100</span>';// Show credits after delay
+      setTimeout(showCredits,25000)}} // 3500 aqui podríamos ajustar el tiempo que tarda en mostrar los créditos después de completar la animación del puntaje
+      requestAnimationFrame(anim);
+    },600);
+  });
+}
+
+function showCredits(){
+  document.getElementById('screen-credits').classList.add('on');
+}
+
+// ════════════════════════════════════════════
+// KEYBOARD + CLICK
+// ════════════════════════════════════════════
+document.getElementById('stage').addEventListener('click',e=>{
+  if(e.target.closest('.opt,.dlg-cont'))return;
+  if(document.getElementById('dec-box').style.display!=='none')return;
+  if(document.getElementById('data-room').classList.contains('on'))return;
+  advance();
+});
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'||e.code==='Enter'){
+    if(document.getElementById('dec-box').style.display!=='none')return;
+    if(document.getElementById('data-room').classList.contains('on'))return;
+    if(document.getElementById('ov-email').classList.contains('on'))return;
+    e.preventDefault();advance();
+  }
+  if(['Digit1','Digit2','Digit3'].includes(e.code)){
+    if(document.getElementById('dec-box').style.display==='none')return;
+    const i=parseInt(e.code.slice(-1))-1;
+    const btns=document.querySelectorAll('.opt');if(btns[i])btns[i].click();
+  }
+});
+window.addEventListener('resize',()=>{if(G.currentScene){const old=G.currentScene;G.currentScene=null;setScene(old)}});
+</script>
+</body>
+</html>
